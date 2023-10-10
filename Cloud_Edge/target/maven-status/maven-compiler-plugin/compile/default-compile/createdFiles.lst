@@ -1,0 +1,4 @@
+com/cloudedge/app/App.class
+com/cloudedge/app/GUI/GUIMain.class
+com/cloudedge/app/Webserver/ClientAuthenticator.class
+com/cloudedge/app/GUI/ClientAuthView.class
