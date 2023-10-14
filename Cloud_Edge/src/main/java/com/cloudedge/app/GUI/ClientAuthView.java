@@ -18,12 +18,13 @@ public class ClientAuthView {
         HttpPost httpPost = new HttpPost("http://localhost:8080/validate");
         JSONObject json = new JSONObject();
         json.put("Username", username);
-        json.put("Password", password); // Ideally, this password should be encrypted, not plain text
+        json.put("Password", password);
         CloseableHttpResponse postResponse;
         try {
             StringEntity entity = new StringEntity(json.toString());
             httpPost.setEntity(entity);
             httpPost.setHeader("Content-Type", "application/json");
+            httpPost.setHeader("Action", "ValidateUser");
             postResponse = httpClient.execute(httpPost);
             if (postResponse.getStatusLine().getStatusCode() == 200) {
                 String content = EntityUtils.toString(postResponse.getEntity());
@@ -39,7 +40,8 @@ public class ClientAuthView {
             try {
                 httpClient.close();
             } catch (IOException e) {
-                System.out.println("Error while closing HttpClient. Error: " + e);
+                System.out.println("Error while closing HttpClient. Error: " + e); // add check to see error code and
+                                                                                   // display error log
             }
         }
         return false;
@@ -48,6 +50,36 @@ public class ClientAuthView {
     boolean create_user(String username, String password) {
         // code to create a user by send new details to webserver and storing it in
         // credentials file
-        return true;
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        HttpPost httpPost = new HttpPost("http://localhost:8080/validate");
+        JSONObject json = new JSONObject();
+        json.put("Username", username);
+        json.put("Password", password);
+        CloseableHttpResponse postResponse;
+        try {
+            StringEntity entity = new StringEntity(json.toString());
+            httpPost.setEntity(entity);
+            httpPost.setHeader("Content-Type", "application/json");
+            httpPost.setHeader("Action", "AddUser");
+            postResponse = httpClient.execute(httpPost);
+            if (postResponse.getStatusLine().getStatusCode() == 200) {
+                String content = EntityUtils.toString(postResponse.getEntity());
+                System.out.println("POST Response: " + content);
+                return true;
+            } else {
+                System.out.println(
+                        "Error with the server. Received code: " + postResponse.getStatusLine().getStatusCode());
+            }
+        } catch (Exception e) {
+            System.out.println("Error while handling HTTP requests. Error: " + e);
+        } finally {
+            try {
+                httpClient.close();
+            } catch (IOException e) {
+                System.out.println("Error while closing HttpClient. Error: " + e); // add check to see error code and
+                                                                                   // display error log
+            }
+        }
+        return false;
     }
 }

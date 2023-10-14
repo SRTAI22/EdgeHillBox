@@ -2,6 +2,7 @@ package com.cloudedge.app.Webserver;
 
 import org.apache.http.*;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 import org.apache.http.util.EntityUtils;
@@ -10,6 +11,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import org.json.JSONObject;
 import com.cloudedge.app.Webserver.ClientAuthenticator;
+import com.cloudedge.app.HttpUtils;
 
 public class RequestHandler {
     // test handler
@@ -72,14 +74,33 @@ public class RequestHandler {
         @Override
         public void handle(HttpRequest request, HttpResponse response, HttpContext context)
                 throws HttpException, IOException {
-
             String method = request.getRequestLine().getMethod().toUpperCase();
 
+            if (method.equals("POST")) {
+                String header = request.getFirstHeader("Action").getValue();
+                if (header.equals("ValidateUser")) {
+                    ValidateUser(request, response, context);
+                } else if (header.equals("AddUser")) {
+                    AddUser(request, response, context);
+                } else {
+                    response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+                }
+            } else {
+                response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+        }
+
+        public void ValidateUser(HttpRequest request, HttpResponse response, HttpContext context)
+                throws HttpException, IOException {
+
+            // entity
             HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
-            String body = EntityUtils.toString(entity);
 
-            JSONObject json = new JSONObject(body);
+            // Create HttpIUtils parse validation objects
+            HttpUtils httpUtils = new HttpUtils();
 
+            // parse json payload
+            JSONObject json = HttpUtils.parseValidationRequestBody(entity, request);
             String username = json.getString("Username");
             String password = json.getString("Password");
 
@@ -89,15 +110,9 @@ public class RequestHandler {
             boolean isValid = clientAuthenticator.check_credentials(username, password);
 
             if (isValid) {
-                // json.remove("Username");
-                // json.remove("Password");
-                json.clear();
-                response.setStatusCode(HttpStatus.SC_OK);
-                json.put("Valid", true);
-                String jsonString = json.toString();
-
-                StringEntity s_entity = new StringEntity(jsonString);
-                response.setEntity(s_entity); // String entity
+                json.clear(); // remove extrated username ans password from json object
+                String jsonPayload = "{\"Valid\":true}";
+                HttpUtils.sendJsonResponse(response, jsonPayload);
             } else {
                 response.setStatusCode(HttpStatus.SC_NOT_FOUND);
             }
@@ -105,6 +120,34 @@ public class RequestHandler {
         }
 
         // create user
+        public void AddUser(HttpRequest request, HttpResponse response, HttpContext context)
+                throws HttpException, IOException {
+
+            // entity
+            HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
+
+            // Create HttpIUtils parse validation objects
+            HttpUtils httpUtils = new HttpUtils();
+
+            // parse json payload
+            JSONObject json = HttpUtils.parseValidationRequestBody(entity, request);
+            String username = json.getString("Username");
+            String password = json.getString("Password");
+
+            // pass extracted values to auth
+
+            ClientAuthenticator clientAuthenticator = new ClientAuthenticator();
+            boolean isValid = clientAuthenticator.append_new_user(username, password);
+
+            if (isValid) {
+                json.clear(); // remove extrated username ans password from json object
+                String jsonPayload = "{\"Created\":true}";
+                HttpUtils.sendJsonResponse(response, jsonPayload);
+            } else {
+                response.setStatusCode(HttpStatus.SC_CONFLICT);
+            }
+
+        }
 
         // upload files
 

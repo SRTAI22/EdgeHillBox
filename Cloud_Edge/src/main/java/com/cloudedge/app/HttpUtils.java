@@ -2,12 +2,19 @@ package com.cloudedge.app;
 
 import org.apache.http.HttpStatus;
 import org.apache.http.HttpVersion;
+import org.apache.http.ParseException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.util.EntityUtils;
 import org.apache.http.HttpResponse;
+
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.json.JSONObject;
 
@@ -40,27 +47,32 @@ public class HttpUtils {
     }
 
     // hanlde incoming payload
-    public static String parseRequestBody(HttpEntity entity) {
-        return null;
-        // Parse the request body and return as string
-    }
+    public static JSONObject parseValidationRequestBody(HttpEntity entity, HttpRequest request)
+            throws ParseException, IOException {
+        // parse json payload
+        String body = EntityUtils.toString(entity);
 
-    public static Map<String, String> parseQueryParams(String uri) {
-        return null;
-        // Parse query parameters from URI and return as a map
+        JSONObject json = new JSONObject(body);
+
+        return json;
     }
 
     // handle outgoing payload
-    public static void sendJsonResponse(HttpResponse response, String jsonPayload) { // potential type arugment which
-                                                                                     // will help function knwo what
-                                                                                     // type of format to follow
-        // Set JSON payload to HttpResponse and set appropriate headers
-        JSONObject json = new JSONObject();
-
+    public static void sendJsonResponse(HttpResponse response, String jsonPayload) {
+        try {
+            StringEntity entity = new StringEntity(jsonPayload);
+            response.setHeader("Content-Type", "application/json");
+            response.setEntity(entity);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void addCorsHeaders(HttpResponse response) {
         // Add CORS headers to the HttpResponse
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
+        response.setHeader("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token");
     }
 
 }

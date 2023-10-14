@@ -1,7 +1,9 @@
+com/cloudedge/app/Webserver/ClientAuthenticator$CredentialsHandler.class
 com/cloudedge/app/GUI/GUIMain.class
 com/cloudedge/app/Webserver/ClientAuthenticator.class
 com/cloudedge/app/Webserver/RequestHandler$HelloHandler.class
 com/cloudedge/app/Webserver/RequestHandler$CredentialValidation.class
+com/cloudedge/app/Webserver/EncryptionService.class
 com/cloudedge/app/App.class
 com/cloudedge/app/HttpUtils.class
 com/cloudedge/app/Webserver/ServerMain.class
