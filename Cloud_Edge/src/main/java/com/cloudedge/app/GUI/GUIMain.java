@@ -1,10 +1,15 @@
 package com.cloudedge.app.GUI;
 
+// Local imports 
 import com.cloudedge.app.GUI.GUIMain;
 import com.cloudedge.app.GUI.ClientAuthView;
 import com.cloudedge.app.Webserver.ServerMain;
 
+// UI imports
 import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GUIMain {
     // login page
@@ -44,20 +49,25 @@ public class GUIMain {
         confirmLogin.addActionListener(d -> {
             System.out.println(passwordText.getText()); // debug
             System.out.println(usernameText.getText()); // debug
-            // the method to validate details
-            ClientAuthView clientAuthView = new ClientAuthView();
-            boolean isValid = clientAuthView.validate_credentials(usernameText.getText(), passwordText.getText());
-            System.out.println(isValid);
 
-            if (isValid) {
-                main_page(frame);
+            if ((usernameText.getText().equals("") || passwordText.getText().equals(""))) {
+                JOptionPane.showMessageDialog(frame, "Username and Password, cannot be blank.", "Details Error", 0);
+            } else {
+                // the method to validate details
+                ClientAuthView clientAuthView = new ClientAuthView();
+                boolean isValid = clientAuthView.validate_credentials(frame, usernameText.getText(),
+                        passwordText.getText());
+                System.out.println(isValid);
+                if (isValid) {
+                    main_page(frame);
+                }
             }
         });
 
-        // back button event listner
         backButton.addActionListener(e -> {
             login_sign_up_page(frame); // back to login page
         });
+
     }
 
     // signup page
@@ -73,7 +83,7 @@ public class GUIMain {
         frame.add(usernameLabel);
         // add input field
         JTextField usernameText = new JTextField(20);
-        usernameText.setBounds(20, 30, 160, 30);
+        usernameText.setBounds(200, 30, 160, 30);
         frame.add(usernameText);
 
         // add password
@@ -98,12 +108,17 @@ public class GUIMain {
         confirmSignUP.addActionListener(d -> {
             System.out.println(passwordText.getText()); // debug
             System.out.println(usernameText.getText()); // debug
-            // the method to validate details
-            ClientAuthView clientAuthView = new ClientAuthView();
-            boolean isValid = clientAuthView.create_user(usernameText.getText(), passwordText.getText());
-            System.out.println(isValid);
-            if (isValid) {
-                main_page(frame);
+
+            if ((usernameText.getText().equals("") || passwordText.getText().equals(""))) {
+                JOptionPane.showMessageDialog(frame, "Username and Password, cannot be blank.", "Details Error", 0);
+            } else {
+                // the method to validate details
+                ClientAuthView clientAuthView = new ClientAuthView();
+                boolean isValid = clientAuthView.create_user(frame, usernameText.getText(), passwordText.getText());
+                System.out.println(isValid);
+                if (isValid) {
+                    main_page(frame);
+                }
             }
         });
 
@@ -118,7 +133,52 @@ public class GUIMain {
     public static void main_page(JFrame frame) {
         // main page desin and code which will call upon sub function to make post
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        System.out.println("Main page");
+
+        // remove laat page content
+        frame.getContentPane().removeAll();
+        frame.getContentPane().repaint();
+
+        // Set layout to null for custom positioning
+        frame.setLayout(null);
+
+        // Synced status label
+        JLabel syncedStatusLabel = new JLabel("Synced status");
+        syncedStatusLabel.setBounds(50, 50, 100, 30); // x, y, width, height
+        frame.add(syncedStatusLabel);
+
+        // Sync button
+        JButton syncButton = new JButton("Sync");
+        syncButton.setBounds(50, 90, 80, 30);
+        frame.add(syncButton);
+
+        // Local Files label and panel
+        JLabel localFilesLabel = new JLabel("Local Files");
+        localFilesLabel.setBounds(200, 50, 100, 30);
+        frame.add(localFilesLabel);
+
+        JPanel localFilesPanel = new JPanel();
+        localFilesPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        localFilesPanel.setBounds(200, 90, 150, 200);
+        frame.add(localFilesPanel);
+
+        // Cloud Files label and panel
+        JLabel cloudFilesLabel = new JLabel("Cloud files");
+        cloudFilesLabel.setBounds(400, 50, 100, 30);
+        frame.add(cloudFilesLabel);
+
+        JPanel cloudFilesPanel = new JPanel();
+        cloudFilesPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        cloudFilesPanel.setBounds(400, 90, 150, 200);
+        frame.add(cloudFilesPanel);
+
+        // Cloud Edge label at the bottom
+        JLabel cloudEdgeLabel = new JLabel("Cloud Edge");
+        cloudEdgeLabel.setBounds(20, 430, 270, 120);
+        frame.add(cloudEdgeLabel);
+
+        // Size and visibility settings
+        frame.setSize(700, 540); // Width, height
+        frame.setVisible(true);
     }
 
     // MAIN|login in and sign up page

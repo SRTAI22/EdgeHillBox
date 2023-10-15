@@ -21,6 +21,14 @@ class ClientAuthenticator {
             this.cred = cred;
         }
 
+        boolean CredentialAvailabilityCheck(String username) {
+            if (cred.containsKey(username)) {
+                return false;
+            }
+
+            return true;
+        }
+
         // method to query and check credentials
         boolean CredentialQuery(String username, String password) {
             if (!cred.containsKey(username) || !cred.get(username).equals(password)) {
@@ -49,12 +57,12 @@ class ClientAuthenticator {
         // code to add new users to credentials file
 
         CredentialsHandler credentialsHandler = new CredentialsHandler(cred);
-        boolean exists = credentialsHandler.CredentialQuery(username, password);
+        boolean exists = credentialsHandler.CredentialAvailabilityCheck(username);
 
         if (!exists) {
-            credentialsHandler.AddNewUser(username, password);
-        } else {
             return false;
+        } else {
+            credentialsHandler.AddNewUser(username, password);
         }
         return true;
     }
