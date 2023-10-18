@@ -108,7 +108,7 @@ public class RequestHandler {
             // pass extracted values to auth
 
             ClientAuthenticator clientAuthenticator = new ClientAuthenticator();
-            boolean isValid = clientAuthenticator.check_credentials(username, password);
+            boolean isValid = clientAuthenticator.checkCredentials(username, password);
 
             if (isValid) {
                 json.clear(); // remove extrated username ans password from json object
@@ -138,7 +138,7 @@ public class RequestHandler {
             // pass extracted values to auth
 
             ClientAuthenticator clientAuthenticator = new ClientAuthenticator();
-            boolean isValid = clientAuthenticator.append_new_user(username, password);
+            boolean isValid = clientAuthenticator.appendNewUser(username, password);
 
             if (isValid) {
                 json.clear(); // remove extrated username ans password from json object

@@ -1,69 +1,60 @@
 package com.cloudedge.app.Webserver;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 class ClientAuthenticator {
-    // declare test hash map
-    private final Map<String, String> cred;
+    private Map<String, String> map;
 
-    // Constructor to initialize the hash map and add test cred
     public ClientAuthenticator() {
-        this.cred = new HashMap<>();
-        this.cred.put("Nelio", "password"); // manually adding creds for testing
+        map = new HashMap<>();
+        // deserialize map here
+        EncryptionService encryptionService = new EncryptionService();
+        try {
+            map = encryptionService.deserialize("Credentials.ser");
+        } catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    // db/cred file handler method
     static class CredentialsHandler {
-        private final Map<String, String> cred;
+        private Map<String, String> cred;
+        EncryptionService encryptionService = new EncryptionService();
 
         CredentialsHandler(Map<String, String> cred) {
             this.cred = cred;
         }
 
-        boolean CredentialAvailabilityCheck(String username) {
-            if (cred.containsKey(username)) {
-                return false;
-            }
-
-            return true;
+        boolean credentialAvailabilityCheck(String username) {
+            return !cred.containsKey(username);
         }
 
-        // method to query and check credentials
-        boolean CredentialQuery(String username, String password) {
-            if (!cred.containsKey(username) || !cred.get(username).equals(password)) {
-                return false;
-            }
-            return true;
+        boolean credentialQuery(String username, String password) {
+            return cred.containsKey(username) && cred.get(username).equals(password);
         }
 
-        // method to put new user
-        void AddNewUser(String username, String password) {
+        void addNewUser(String username, String password) throws IOException {
             cred.put(username, password);
-            System.out.println(cred);
+            encryptionService.serialize("Credentials.ser", cred);
         }
     }
 
-    // Auth handshake methods
-    boolean check_credentials(String username, String password) {
-        // code to check the credentials on the credentials file
-
-        // single CredentialsHandler instance
-        CredentialsHandler credentialsHandler = new CredentialsHandler(cred);
-        return credentialsHandler.CredentialQuery(username, password);
+    boolean checkCredentials(String username, String password) {
+        CredentialsHandler credentialsHandler = new CredentialsHandler(map);
+        return credentialsHandler.credentialQuery(username, password);
     }
 
-    boolean append_new_user(String username, String password) {
-        // code to add new users to credentials file
-
-        CredentialsHandler credentialsHandler = new CredentialsHandler(cred);
-        boolean exists = credentialsHandler.CredentialAvailabilityCheck(username);
-
-        if (!exists) {
-            return false;
-        } else {
-            credentialsHandler.AddNewUser(username, password);
+    boolean appendNewUser(String username, String password) {
+        CredentialsHandler credentialsHandler = new CredentialsHandler(map);
+        if (credentialsHandler.credentialAvailabilityCheck(username)) {
+            try {
+                credentialsHandler.addNewUser(username, password);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return true;
         }
-        return true;
+        return false;
     }
 }
