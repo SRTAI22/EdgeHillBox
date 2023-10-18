@@ -5,6 +5,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
+import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 import java.io.IOException;
 import java.net.URI;
@@ -148,13 +149,34 @@ public class RequestHandler {
             }
 
         }
-
-        // upload files
-
-        // download files
-
-        // sync files
-
     }
+
+    // Status code
+
+    public static class statusHandler implements HttpRequestHandler {
+        @Override
+        public void handle(HttpRequest request, HttpResponse response, HttpContext context)
+                throws HttpException, IOException {
+
+            // entity
+            HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
+
+            // Create HttpIUtils parse validation objects
+            HttpUtils httpUtils = new HttpUtils();
+
+            JSONObject json = HttpUtils.parseValidationRequestBody(entity, request);
+
+            ServerStatus serverStatus = new ServerStatus();
+
+            serverStatus.handshake(json, httpUtils, response); // return status
+
+        }
+    }
+
+    // upload files
+
+    // download filesc
+
+    // sync files
 
 }

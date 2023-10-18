@@ -4,6 +4,7 @@ package com.cloudedge.app.GUI;
 import com.cloudedge.app.GUI.GUIMain;
 import com.cloudedge.app.GUI.ClientAuthView;
 import com.cloudedge.app.Webserver.ServerMain;
+import com.cloudedge.app.GUI.ServerStatusView;
 
 // UI imports
 import javax.swing.*;
@@ -79,7 +80,7 @@ public class GUIMain {
         frame.getContentPane().repaint();
         // ask for username and password append to frame
         JLabel usernameLabel = new JLabel("Create username");
-        usernameLabel.setBounds(200, 10, 80, 25);
+        usernameLabel.setBounds(200, 10, 120, 25);
         frame.add(usernameLabel);
         // add input field
         JTextField usernameText = new JTextField(20);
@@ -88,7 +89,7 @@ public class GUIMain {
 
         // add password
         JLabel passwordLabel = new JLabel("Create password");
-        passwordLabel.setBounds(200, 60, 80, 25);
+        passwordLabel.setBounds(200, 60, 120, 25);
         frame.add(passwordLabel);
 
         // add input field
@@ -216,9 +217,10 @@ public class GUIMain {
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Cloud-Edge"); // Create new object of Jfrmae this is the main window which will be
-                                                 // manipulated to match user's input
 
-        login_sign_up_page(frame); // create frame
+        ServerStatusView serverStatusView = new ServerStatusView();
+        serverStatusView.connect(frame);
+
     }
 
 }
