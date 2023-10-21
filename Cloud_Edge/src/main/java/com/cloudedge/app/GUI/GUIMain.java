@@ -5,12 +5,22 @@ import com.cloudedge.app.GUI.GUIMain;
 import com.cloudedge.app.GUI.ClientAuthView;
 import com.cloudedge.app.Webserver.ServerMain;
 import com.cloudedge.app.GUI.ServerStatusView;
+import com.cloudedge.app.GUI.FileOperationView;
 
 // UI imports
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+// other
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GUIMain {
     // login page
@@ -132,6 +142,10 @@ public class GUIMain {
     // Main page
 
     public static void main_page(JFrame frame) {
+
+        FileOperationView fileOperationView = new FileOperationView();
+        boolean localbox = fileOperationView.Check_local_Box(); // initialise EdgeHillBox folder
+
         // main page desin and code which will call upon sub function to make post
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
@@ -180,6 +194,13 @@ public class GUIMain {
         // Size and visibility settings
         frame.setSize(700, 540); // Width, height
         frame.setVisible(true);
+
+        if (localbox) {
+            // run code to add and delete files
+            List<Path> files = fileOperationView.getFilesFromLocalBox();
+            System.out.println(files);
+
+        }
     }
 
     // MAIN|login in and sign up page

@@ -7,8 +7,16 @@ import com.cloudedge.app.Webserver.RequestHandler.TestHandler;
 import com.cloudedge.app.Webserver.RequestHandler.CredentialValidation;
 import com.cloudedge.app.Webserver.RequestHandler.statusHandler;
 
+// local imports
+import com.cloudedge.app.Webserver.PathManager;
+
 public class ServerMain {
     public static void main(String[] args) throws Exception {
+        // initialise EdgeHillBox folder
+        PathManager pathManager = new PathManager();
+        // init
+        pathManager.init_EdgeHillBox();
+
         HttpServer server = ServerBootstrap.bootstrap()
                 .setListenerPort(8080)
                 .registerHandler("/test", new TestHandler())
