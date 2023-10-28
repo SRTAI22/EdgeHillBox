@@ -11,6 +11,7 @@ import com.cloudedge.app.GUI.FileOperationView;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -20,9 +21,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GUIMain {
+    // helper style
+    public static class RoundJPanel extends JPanel {
+        @Override
+        protected void paintComponent(Graphics g) {
+            if (g instanceof Graphics2D) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(getBackground());
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
+                g2d.setColor(getForeground());
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
+            }
+        }
+    }
+
     // login page
     public static void login_page(JFrame frame) {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -82,7 +100,6 @@ public class GUIMain {
     }
 
     // signup page
-
     public static void signup_page(JFrame frame) {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         // add login page to frame
@@ -140,7 +157,6 @@ public class GUIMain {
     }
 
     // Main page
-
     public static void main_page(JFrame frame) {
 
         FileOperationView fileOperationView = new FileOperationView();
@@ -171,9 +187,9 @@ public class GUIMain {
         localFilesLabel.setBounds(200, 50, 100, 30);
         frame.add(localFilesLabel);
 
-        JPanel localFilesPanel = new JPanel();
+        JPanel localFilesPanel = new RoundJPanel();
         localFilesPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        localFilesPanel.setBounds(200, 90, 150, 200);
+        localFilesPanel.setBounds(200, 90, 180, 380);
         frame.add(localFilesPanel);
 
         // Cloud Files label and panel
@@ -181,9 +197,9 @@ public class GUIMain {
         cloudFilesLabel.setBounds(400, 50, 100, 30);
         frame.add(cloudFilesLabel);
 
-        JPanel cloudFilesPanel = new JPanel();
+        JPanel cloudFilesPanel = new RoundJPanel();
         cloudFilesPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        cloudFilesPanel.setBounds(400, 90, 150, 200);
+        cloudFilesPanel.setBounds(400, 90, 180, 380);
         frame.add(cloudFilesPanel);
 
         // Cloud Edge label at the bottom
@@ -197,10 +213,48 @@ public class GUIMain {
 
         if (localbox) {
             // run code to add and delete files
-            List<Path> files = fileOperationView.getFilesFromLocalBox();
+            List<Path> files = fileOperationView.getFilesFromLocalBox(); // get local files
             System.out.println(files);
 
+            syncButton.addActionListener(e -> {
+                // create hash map to store file names and checksums
+                Map<String, String> filesum = new HashMap<>();
+
+                // get hash for files
+                for (Path file : files) {
+                    String hash = fileOperationView.calculateChecksum(file);
+                    filesum.put(file.getFileName().toString(), hash); // add files to hash map to send off
+                }
+
+                // send hash map for comparison
+                String desyncfiles = fileOperationView.fileSyncCheck(filesum);
+
+                if (desyncfiles != null && !desyncfiles.isEmpty()) {
+                    // Here, you need to convert 'desyncfiles' to a list of file paths to upload
+                    List<Path> filesToUpload = convertDesyncFilesToPath(desyncfiles);
+                    boolean upload = fileOperationView.uploadfiles(filesToUpload);
+                }
+            });
         }
+
+    }
+
+    private static List<Path> convertDesyncFilesToPath(String desyncfiles) {
+        List<Path> filesToUpload = new ArrayList<>();
+        String[] fileNames = desyncfiles.split(",");
+        for (String fileName : fileNames) {
+            filesToUpload.add(Paths.get(fileName.trim()));
+        }
+        return filesToUpload;
+    }
+
+    private static List<String> convertDesyncFilesToList(String desyncfiles) {
+        List<String> filesToUpload = new ArrayList<>();
+        String[] fileNames = desyncfiles.split(",");
+        for (String fileName : fileNames) {
+            filesToUpload.add(fileName.trim());
+        }
+        return filesToUpload;
     }
 
     // MAIN|login in and sign up page

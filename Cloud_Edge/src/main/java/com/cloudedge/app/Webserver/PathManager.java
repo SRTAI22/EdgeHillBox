@@ -1,6 +1,9 @@
 package com.cloudedge.app.Webserver;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class PathManager {
 
@@ -16,15 +19,20 @@ public class PathManager {
         }
     }
 
-    String init_User(String username) {
+    Path init_User(String username) {
         String dir_name = username + "_box";
-        String path = "\\EdgeHillBoxS\\" + username + "_box\\"; // create path to user's box
-        File dir = new File(dir_name);
+        Path path = Paths.get("EdgeHillBoxS", dir_name); // create path to user's box using Paths.get for better path
+                                                         // handling
 
-        if (!dir.exists()) {
-            dir.mkdir();
+        if (!Files.exists(path)) { // using Files.exists for checking if the directory exists
+            try {
+                Files.createDirectories(path); // using Files.createDirectories for creating the directory
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         return path;
     }
+
 }
