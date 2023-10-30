@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import org.json.JSONObject;
 import com.cloudedge.app.Webserver.ClientAuthenticator;
@@ -241,10 +242,16 @@ public class RequestHandler {
                     Path path = pathManager.init_User(username);
 
                     // Add the files to the user's box
+                    // Add the files to the user's box
                     for (File file : uploadedFiles) {
                         System.out.println("Processing: " + file);
                         Path filePath = path.resolve(file.getName());
-                        Files.copy(file.toPath(), filePath);
+
+                        if (Files.exists(filePath)) {
+                            // Generate a new file name or skip based on your logic
+                        } else {
+                            Files.copy(file.toPath(), filePath, StandardCopyOption.COPY_ATTRIBUTES);
+                        }
                     }
 
                     // Set the response status code and message
@@ -290,7 +297,12 @@ public class RequestHandler {
                 String header = multipartStream.readHeaders();
                 System.out.println("Header: " + header);
 
-                File tempFile = File.createTempFile("upload", ".tmp");
+                // Extract filename from header
+                String fileNameFromHeader = extractFileName(header);
+
+                // Use the extracted file name to create the temporary file
+                File tempFile = File.createTempFile("upload-", fileNameFromHeader);
+
                 try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
                     multipartStream.readBodyData(outputStream);
                 }
