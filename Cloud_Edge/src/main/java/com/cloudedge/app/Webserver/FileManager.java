@@ -20,9 +20,9 @@ public class FileManager {
             return;
         }
         for (File file : filesToAdd) {
+            Path destPath = Paths.get(userpath.toString(), file.getName());
             try {
-                Files.copy(file.toPath(), Paths.get(userpath.toString(), file.getName()),
-                        StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(file.toPath(), destPath, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 e.printStackTrace();
             }

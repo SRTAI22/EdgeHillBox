@@ -227,7 +227,7 @@ public class GUIMain {
                 }
 
                 // send hash map for comparison
-                String desyncfiles = fileOperationView.fileSyncCheck(filesum);
+                List<String> desyncfiles = fileOperationView.fileSyncCheck(filesum);
 
                 if (desyncfiles != null && !desyncfiles.isEmpty()) {
                     // Here, you need to convert 'desyncfiles' to a list of file paths to upload
@@ -239,12 +239,17 @@ public class GUIMain {
 
     }
 
-    private static List<Path> convertDesyncFilesToPath(String desyncfiles) {
+    private static List<Path> convertDesyncFilesToPath(List<String> desyncfiles) {
+        System.out.println("Pre-conversion: " + desyncfiles);
         List<Path> filesToUpload = new ArrayList<>();
-        String[] fileNames = desyncfiles.split(",");
-        for (String fileName : fileNames) {
-            filesToUpload.add(Paths.get(fileName.trim()));
+        for (String desyncfile : desyncfiles) {
+            String[] fileNames = desyncfile.split(",");
+            System.out.println("Filenames: " + fileNames);
+            for (String fileName : fileNames) {
+                filesToUpload.add(Paths.get(fileName.trim()));
+            }
         }
+        System.out.println("Paths for returned files: " + filesToUpload);
         return filesToUpload;
     }
 

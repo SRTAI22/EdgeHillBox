@@ -242,15 +242,15 @@ public class RequestHandler {
                     Path path = pathManager.init_User(username);
 
                     // Add the files to the user's box
-                    // Add the files to the user's box
                     for (File file : uploadedFiles) {
                         System.out.println("Processing: " + file);
                         Path filePath = path.resolve(file.getName());
 
                         if (Files.exists(filePath)) {
-                            // Generate a new file name or skip based on your logic
+                            // Replace existing file
+                            Files.copy(file.toPath(), filePath, StandardCopyOption.REPLACE_EXISTING);
                         } else {
-                            Files.copy(file.toPath(), filePath, StandardCopyOption.COPY_ATTRIBUTES);
+                            Files.copy(file.toPath(), filePath);
                         }
                     }
 
@@ -301,7 +301,7 @@ public class RequestHandler {
                 String fileNameFromHeader = extractFileName(header);
 
                 // Use the extracted file name to create the temporary file
-                File tempFile = File.createTempFile("upload-", fileNameFromHeader);
+                File tempFile = new File(fileNameFromHeader);
 
                 try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
                     multipartStream.readBodyData(outputStream);
@@ -326,14 +326,19 @@ public class RequestHandler {
             }
         }
 
-        // Sync check function
         private void syncCheck(HttpRequest request, HttpResponse response, HttpContext context)
                 throws HttpException, IOException {
+            // DEBUG: Indicate method entry
+            System.out.println("DEBUG: Entered syncCheck");
+
             // init user
             PathManager pathManager = new PathManager();
             FileManager fileManager = new FileManager();
             Path path = pathManager.init_User(username);
             List<Path> files = fileManager.getFilesFromLocalBox(path);
+
+            // DEBUG: List files found in local box
+            System.out.println("DEBUG: Local files: " + files);
 
             // Get the sent hash map from the HTTP POST
             HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
@@ -342,20 +347,32 @@ public class RequestHandler {
                     new TypeToken<HashMap<String, String>>() {
                     }.getType());
 
+            // DEBUG: Show received hash map
+            System.out.println("DEBUG: Received hash map: " + sentHashMap);
+
             Map<String, String> localFileToChecksumMap = new HashMap<>();
             for (Path file : files) {
                 String checksum = fileManager.calculateChecksum(file);
                 localFileToChecksumMap.put(file.toString(), checksum);
             }
 
+            // DEBUG: Local file to checksum map
+            System.out.println("DEBUG: Local file to checksum map: " + localFileToChecksumMap);
+
             // Check if local and remote checksums match for each file
             List<String> filesNeedSync = new ArrayList<>();
 
             for (String remoteFile : sentHashMap.keySet()) {
+                // DEBUG: Checking file
+                System.out.println("DEBUG: Checking file: " + remoteFile);
+
                 if (!remoteFile.equals(sentHashMap.get(remoteFile))) {
                     filesNeedSync.add(remoteFile);
                 }
             }
+
+            // DEBUG: Files needing sync
+            System.out.println("DEBUG: Files needing sync: " + filesNeedSync);
 
             if (!filesNeedSync.isEmpty()) {
                 response.setStatusCode(HttpStatus.SC_CONFLICT);

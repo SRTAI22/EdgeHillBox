@@ -95,31 +95,60 @@ public class FileOperationView {
     // upload via drag and drop
 
     // send local files for comparison
-    String fileSyncCheck(Map<String, String> filesum) {
+    List<String> fileSyncCheck(Map<String, String> filesum) {
         try {
+            // DEBUG: Print to check what we are sending
+            System.out.println("DEBUG: Sending filesum map: " + filesum.toString());
+
             // Create HttpClient
             CloseableHttpClient httpClient = HttpClients.createDefault();
+
             // Create HttpPost
             HttpPost post = new HttpPost("http://localhost:8080/upload");
             post.addHeader("Sync-Check", null);
+
             // Convert the map to JSON
             Gson gson = new GsonBuilder().create();
             String json = gson.toJson(filesum);
+
+            // DEBUG: Print to check JSON string
+            System.out.println("DEBUG: Sending JSON: " + json);
+
             // Set the request body
             StringEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
             post.setEntity(entity);
+
             // Execute and get the response
             try (CloseableHttpResponse response = httpClient.execute(post)) {
                 HttpEntity responseEntity = response.getEntity();
                 String result = EntityUtils.toString(responseEntity, StandardCharsets.UTF_8);
-                System.out.println("Response: " + result);
+
+                // DEBUG: Print to check received response
+                System.out.println("DEBUG: Received response: " + result);
+
                 if (response.getStatusLine().getStatusCode() == 409) {
                     System.out.println("Files not in sync");
+
+                    // DEBUG: What files are we talking about?
+                    System.out.println("DEBUG: Files to be synced: " + result);
+
                     String[] files = result.split(": ")[1].split(", ");
+
+                    // DEBUG: Check the parsed files array
+                    System.out.println("DEBUG: Parsed files array: " + Arrays.toString(files));
+
+                    List<String> paths = new ArrayList<>();
+
                     for (String file : files) {
                         String path = getFileByName(file).toString();
-                        return path;
+
+                        // DEBUG: What path are we returning?
+                        System.out.println("DEBUG: Returning path: " + path);
+
+                        paths.add(path);
                     }
+
+                    return paths;
                 }
 
                 return null;
@@ -159,10 +188,12 @@ public class FileOperationView {
         System.out.println("Files to be uploaded: " + files);
 
         // Loop over each file path and add it to the multipart entity
+        int counter = 1; // Initialize a counter variable
         for (Path filePath : files) {
             System.out.println("Currently processing file: " + filePath);
             File file = filePath.toFile();
-            builder.addBinaryBody("files", file, ContentType.APPLICATION_OCTET_STREAM, file.getName());
+            builder.addBinaryBody("file" + counter, file, ContentType.APPLICATION_OCTET_STREAM, file.getName());
+            counter++; // Increment the counter for each file
         }
 
         HttpEntity multipart = builder.build();
@@ -183,5 +214,7 @@ public class FileOperationView {
     // Download files
 
     // compare client side
+
+    // store UFU (Unique file upload number) to serialized hash map
 
 }
