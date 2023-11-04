@@ -12,6 +12,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -88,7 +89,12 @@ public class GUIMain {
                         passwordText.getText());
                 System.out.println(isValid);
                 if (isValid) {
-                    main_page(frame);
+                    try {
+                        main_page(frame);
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 }
             }
         });
@@ -145,7 +151,12 @@ public class GUIMain {
                 boolean isValid = clientAuthView.create_user(frame, usernameText.getText(), passwordText.getText());
                 System.out.println(isValid);
                 if (isValid) {
-                    main_page(frame);
+                    try {
+                        main_page(frame);
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 }
             }
         });
@@ -156,16 +167,14 @@ public class GUIMain {
         });
     }
 
-    // Main page
-    public static void main_page(JFrame frame) {
-
+    public static void main_page(JFrame frame) throws IOException {
         FileOperationView fileOperationView = new FileOperationView();
         boolean localbox = fileOperationView.Check_local_Box(); // initialise EdgeHillBox folder
 
-        // main page desin and code which will call upon sub function to make post
+        // main page design and code which will call upon sub function to make post
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        // remove laat page content
+        // remove last page content
         frame.getContentPane().removeAll();
         frame.getContentPane().repaint();
 
@@ -190,6 +199,7 @@ public class GUIMain {
         JPanel localFilesPanel = new RoundJPanel();
         localFilesPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         localFilesPanel.setBounds(200, 90, 180, 380);
+        localFilesPanel.setLayout(new BoxLayout(localFilesPanel, BoxLayout.Y_AXIS)); // set vertical layout
         frame.add(localFilesPanel);
 
         // Cloud Files label and panel
@@ -216,11 +226,100 @@ public class GUIMain {
             List<Path> files = fileOperationView.getFilesFromLocalBox(); // get local files
             System.out.println(files);
 
+            String remoteFiles = fileOperationView.getRemoteFiles(); // get remote files
+            System.out.println("Remote files: " + remoteFiles);
+
+            // Create a list of checkboxes to select files to upload
+            List<JCheckBox> checkBoxes = new ArrayList<>();
+            for (Path file : files) {
+                JPanel filePanel = new JPanel();
+                filePanel.setLayout(new BorderLayout());
+                filePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+                filePanel.setBackground(Color.lightGray);
+                filePanel.setAlignmentX(Component.LEFT_ALIGNMENT); // align to the left
+
+                JCheckBox checkBox = new JCheckBox();
+                checkBox.setHorizontalAlignment(SwingConstants.LEFT); // align to the left
+                checkBox.setOpaque(false); // make checkbox transparent
+                checkBox.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        checkBox.setBackground(new Color(200, 200, 200)); // set darker shade when hovering
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        checkBox.setBackground(null);
+                    }
+                });
+
+                JLabel fileNameLabel = new JLabel(file.getFileName().toString());
+                fileNameLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                fileNameLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
+                int width = 180;
+                filePanel.add(checkBox, BorderLayout.EAST);
+                filePanel.add(fileNameLabel, BorderLayout.CENTER);
+                filePanel.setPreferredSize(new Dimension(width, 20));
+                filePanel.setMaximumSize(new Dimension(width, 20));
+                filePanel.setMinimumSize(new Dimension(width, 20));
+                localFilesPanel.add(filePanel);
+                checkBoxes.add(checkBox);
+
+            }
+
+            // Upload button
+            JButton uploadButton = new JButton("Upload");
+            uploadButton.setBounds(250, 480, 80, 30);
+            uploadButton.setVisible(false);
+            frame.add(uploadButton);
+
+            // Add action listener to show upload button when a file is selected
+            for (JCheckBox checkBox : checkBoxes) {
+                checkBox.addActionListener(e -> {
+                    uploadButton.setVisible(true);
+                });
+            }
+
+            // Add action listener to upload button
+            uploadButton.addActionListener(e -> {
+                // create hash map to store file names and checksums
+                Map<String, String> filesum = new HashMap<>();
+
+                // get hash for selected files
+                List<Path> selectedFiles = new ArrayList<>();
+                for (JCheckBox checkBox : checkBoxes) {
+                    if (checkBox.isSelected()) {
+                        Path file = Paths.get(checkBox.getText());
+                        selectedFiles.add(file);
+                        String hash = fileOperationView.calculateChecksum(file);
+                        filesum.put(file.getFileName().toString(), hash); // add files to hash map to send off
+                    }
+                }
+
+                // send hash map for comparison
+                List<String> desyncfiles = fileOperationView.fileSyncCheck(filesum);
+
+                if (desyncfiles != null && !desyncfiles.isEmpty()) {
+                    // Here, you need to convert 'desyncfiles' to a list of file paths to upload
+                    List<Path> filesToUpload = convertDesyncFilesToPath(desyncfiles);
+                    boolean upload = fileOperationView.uploadfiles(filesToUpload);
+                } else {
+                    // Upload selected files
+                    boolean upload = fileOperationView.uploadfiles(selectedFiles);
+                }
+
+                // Deselect all checkboxes and hide upload button
+                for (JCheckBox checkBox : checkBoxes) {
+                    checkBox.setSelected(false);
+                }
+                uploadButton.setVisible(false);
+            });
+
             syncButton.addActionListener(e -> {
                 // create hash map to store file names and checksums
                 Map<String, String> filesum = new HashMap<>();
 
-                // get hash for files
+                // get hash for all files
                 for (Path file : files) {
                     String hash = fileOperationView.calculateChecksum(file);
                     filesum.put(file.getFileName().toString(), hash); // add files to hash map to send off
@@ -236,7 +335,6 @@ public class GUIMain {
                 }
             });
         }
-
     }
 
     private static List<Path> convertDesyncFilesToPath(List<String> desyncfiles) {

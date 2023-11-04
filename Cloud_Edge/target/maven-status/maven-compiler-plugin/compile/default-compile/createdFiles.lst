@@ -1,5 +1,6 @@
 com/cloudedge/app/Webserver/FileManager.class
 com/cloudedge/app/Webserver/ClientAuthenticator$CredentialsHandler.class
+com/cloudedge/app/Webserver/RequestHandler$ListFiles.class
 com/cloudedge/app/Webserver/ClientAuthenticator.class
 com/cloudedge/app/Webserver/RequestHandler$HelloHandler.class
 com/cloudedge/app/GUI/FileOperationView.class
@@ -8,7 +9,7 @@ com/cloudedge/app/Webserver/ServerStatus.class
 com/cloudedge/app/Webserver/ServerMain.class
 com/cloudedge/app/GUI/ServerStatusView.class
 com/cloudedge/app/Webserver/RequestHandler.class
-com/cloudedge/app/Webserver/RequestHandler$TestHandler.class
+com/cloudedge/app/Webserver/RequestHandler$download.class
 com/cloudedge/app/GUI/GUIMain.class
 com/cloudedge/app/Webserver/PathManager.class
 com/cloudedge/app/Webserver/RequestHandler$upload$1.class
@@ -19,3 +20,4 @@ com/cloudedge/app/Webserver/EncryptionService.class
 com/cloudedge/app/App.class
 com/cloudedge/app/Webserver/RequestHandler$upload.class
 com/cloudedge/app/GUI/ClientAuthView.class
+com/cloudedge/app/GUI/GUIMain$1.class

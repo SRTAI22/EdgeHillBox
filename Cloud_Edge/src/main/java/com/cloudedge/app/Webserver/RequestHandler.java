@@ -42,14 +42,28 @@ import javax.servlet.http.HttpServletRequestWrapper;
 public class RequestHandler {
     private static String username;
 
-    // test handler
-    public static class TestHandler implements HttpRequestHandler {
+    // List remote files
+    public static class ListFiles implements HttpRequestHandler {
         @Override
         public void handle(HttpRequest request, HttpResponse response, HttpContext context)
                 throws HttpException, IOException {
 
-            response.setStatusCode(HttpStatus.SC_OK);
-            response.setEntity(new StringEntity("This is a test response"));
+            if (request.containsHeader("list-remote")) {
+                // initialise the user box
+                PathManager pathManager = new PathManager();
+                Path path = pathManager.init_User(username);
+
+                // get remote files
+                FileManager fileManager = new FileManager();
+                List<Path> remoteList = fileManager.getFilesFromLocalBox(path);
+                System.out.println("list endpoint active");
+                System.out.println("remote list: " + remoteList);
+
+                response.setStatusCode(HttpStatus.SC_OK);
+                response.setEntity(new StringEntity(remoteList.toString()));
+            } else {
+                response.setStatusCode(HttpStatus.SC_BAD_REQUEST); // deny access if header does not meet right value
+            }
         }
     }
 
@@ -386,8 +400,48 @@ public class RequestHandler {
             StringEntity entityRes = new StringEntity("Files are already in sync.");
             response.setEntity(entityRes);
         }
+    }
 
-        // download filesc
+    // download files
+    public static class download implements HttpRequestHandler {
+        @Override
+        public void handle(HttpRequest request, HttpResponse response, HttpContext context)
+                throws HttpException, IOException {
+            if (request.containsHeader("download")) {
+                // on request download
+                downloadRequest(request, response, context);
+            }
 
+            else if (request.containsHeader("auto-sync-download")) {
+                // sync remote files to client
+                fileDownload(request, response, context);
+            }
+
+            else if (request.containsHeader("sync-check")) {
+                // check which files need syncing
+                synCheck(request, response, context);
+            }
+
+            else {
+                response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+                StringEntity entity = new StringEntity("Invalid request");
+                response.setEntity(entity);
+            }
+        }
+
+        // hanlde download request
+        private void downloadRequest(HttpRequest request, HttpResponse response, HttpContext context) {
+
+        }
+
+        // auto-sync donwload
+        private void fileDownload(HttpRequest request, HttpResponse response, HttpContext context) {
+
+        }
+
+        // sync-check
+        private void synCheck(HttpRequest request, HttpResponse response, HttpContext context) {
+
+        }
     }
 }

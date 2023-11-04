@@ -16,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.ParseException;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -212,9 +213,36 @@ public class FileOperationView {
     }
 
     // Download files
+    Boolean downloadfiles() {
+        return false;
+    }
 
     // compare client side
 
-    // store UFU (Unique file upload number) to serialized hash map
+    // List remote files
+    String getRemoteFiles() throws IOException {
+        String remoteList = null;
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpPost listfile = new HttpPost("http://localhost:8080/list");
+
+            // set valid header
+            listfile.setHeader("list-remote", "true");
+
+            try (CloseableHttpResponse response = httpClient.execute(listfile)) {
+                HttpEntity resHttpEntity = response.getEntity();
+                remoteList = EntityUtils.toString(resHttpEntity);
+            } catch (ClientProtocolException cpe) {
+                System.out.println("Client Protocol Exception while getting list of remote files. Error: " + cpe);
+                throw cpe;
+            } catch (IOException ioe) {
+                System.out.println("IO Exception while getting list of remote files. Error: " + ioe);
+                throw ioe;
+            }
+        } catch (IllegalArgumentException iae) {
+            System.out.println("Invalid URL or header while getting list of remote files. Error: " + iae);
+            throw iae;
+        }
+        return remoteList;
+    }
 
 }
