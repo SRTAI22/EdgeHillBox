@@ -211,17 +211,59 @@ public class FileOperationView {
             return false;
         }
     }
+    // compare client side
 
     // Download files
-    Boolean downloadfiles() {
-        return false;
+    Boolean downloadfiles(List<String> selectedFilesToDownload) {
+        System.out.println("Downloading files...");
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpPost downloadFile = new HttpPost("http://localhost:8080/download");
+
+            // Add custom header to indicate this is a file download request
+            downloadFile.addHeader("file-download", "true");
+
+            // Convert the list of files to a JSON string
+            Gson gson = new GsonBuilder().create();
+            String json = gson.toJson(selectedFilesToDownload);
+
+            // Add the JSON string to the request body
+            StringEntity requestEntity = new StringEntity(json, ContentType.APPLICATION_JSON);
+            downloadFile.setEntity(requestEntity);
+
+            // Execute the request and get the response
+            try (CloseableHttpResponse response = httpClient.execute(downloadFile)) {
+                HttpEntity responseEntity = response.getEntity();
+
+                // Loop over each file and save it to disk
+                for (String fileName : selectedFilesToDownload) {
+                    Path filePath = getFileByName(fileName);
+                    File file = filePath.toFile();
+                    try (BufferedInputStream bis = new BufferedInputStream(responseEntity.getContent());
+                            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file))) {
+                        byte[] buffer = new byte[1024];
+                        int bytesRead;
+                        while ((bytesRead = bis.read(buffer)) != -1) {
+                            bos.write(buffer, 0, bytesRead);
+                        }
+                    }
+                }
+                System.out.println("Files downloaded successfully.");
+                return true;
+            } catch (IOException e) {
+                System.out.println("Error while downloading files. Error: " + e);
+                return false;
+            }
+        } catch (IOException e) {
+            System.out.println("Error while downloading files. Error: " + e);
+            return false;
+        }
     }
 
     // compare client side
 
     // List remote files
-    String getRemoteFiles() throws IOException {
-        String remoteList = null;
+    List<String> getRemoteFiles() throws IOException {
+        List<String> remoteList = new ArrayList<>();
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpPost listfile = new HttpPost("http://localhost:8080/list");
 
@@ -230,7 +272,8 @@ public class FileOperationView {
 
             try (CloseableHttpResponse response = httpClient.execute(listfile)) {
                 HttpEntity resHttpEntity = response.getEntity();
-                remoteList = EntityUtils.toString(resHttpEntity);
+                String remoteFiles = EntityUtils.toString(resHttpEntity);
+                remoteList = Arrays.asList(remoteFiles.split("\\s*,\\s*"));
             } catch (ClientProtocolException cpe) {
                 System.out.println("Client Protocol Exception while getting list of remote files. Error: " + cpe);
                 throw cpe;
@@ -243,6 +286,7 @@ public class FileOperationView {
             throw iae;
         }
         return remoteList;
+
     }
 
 }

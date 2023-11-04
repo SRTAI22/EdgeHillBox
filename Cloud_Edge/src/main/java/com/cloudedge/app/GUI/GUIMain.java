@@ -226,7 +226,7 @@ public class GUIMain {
             List<Path> files = fileOperationView.getFilesFromLocalBox(); // get local files
             System.out.println(files);
 
-            String remoteFiles = fileOperationView.getRemoteFiles(); // get remote files
+            List<String> remoteFiles = fileOperationView.getRemoteFiles(); // get remote files
             System.out.println("Remote files: " + remoteFiles);
 
             // Create a list of checkboxes to select files to upload
@@ -267,6 +267,82 @@ public class GUIMain {
 
             }
 
+            // Remote Files label and panel
+
+            // Create a list of checkboxes for remote files
+            List<JCheckBox> remoteCheckBoxes = new ArrayList<>();
+            for (String remoteFile : remoteFiles) {
+                JPanel filePanel = new JPanel();
+                filePanel.setLayout(new BorderLayout());
+                filePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+                filePanel.setBackground(Color.lightGray);
+
+                JCheckBox checkBox = new JCheckBox();
+                checkBox.setHorizontalAlignment(SwingConstants.LEFT);
+                checkBox.setOpaque(false);
+                checkBox.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        checkBox.setBackground(new Color(200, 200, 200)); // set darker shade when hovering
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        checkBox.setBackground(null);
+                    }
+                });
+
+                JLabel fileNameLabel = new JLabel(remoteFile);
+                fileNameLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                fileNameLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
+                int width = 180;
+                filePanel.add(checkBox, BorderLayout.EAST);
+                filePanel.add(fileNameLabel, BorderLayout.CENTER);
+                filePanel.setPreferredSize(new Dimension(width, 20));
+                filePanel.setMaximumSize(new Dimension(width, 20));
+                filePanel.setMinimumSize(new Dimension(width, 20));
+                localFilesPanel.add(filePanel);
+                checkBoxes.add(checkBox);
+
+                filePanel.add(checkBox, BorderLayout.EAST);
+                filePanel.add(fileNameLabel, BorderLayout.CENTER);
+                // ... set size and add to panel
+
+                cloudFilesPanel.add(filePanel);
+                remoteCheckBoxes.add(checkBox);
+            }
+
+            // Download button
+            JButton downloadButton = new JButton("Download");
+            downloadButton.setBounds(350, 480, 100, 30); // Adjust position as needed
+            downloadButton.setVisible(false);
+            frame.add(downloadButton);
+
+            // Action listener to show download button when a remote file is selected
+            for (JCheckBox checkBox : remoteCheckBoxes) {
+                checkBox.addActionListener(e -> downloadButton.setVisible(checkBox.isSelected()));
+            }
+
+            // Action listener for download button
+            downloadButton.addActionListener(e -> {
+                List<String> selectedFilesToDownload = new ArrayList<>();
+                for (JCheckBox checkBox : remoteCheckBoxes) {
+                    if (checkBox.isSelected()) {
+                        selectedFilesToDownload.add(checkBox.getText());
+                    }
+                }
+                if (!selectedFilesToDownload.isEmpty()) {
+                    // Perform download operation
+                    fileOperationView.downloadfiles(selectedFilesToDownload);
+                }
+
+                // Deselect all checkboxes and hide download button
+                for (JCheckBox checkBox : remoteCheckBoxes) {
+                    checkBox.setSelected(false);
+                }
+                downloadButton.setVisible(false);
+            });
+
             // Upload button
             JButton uploadButton = new JButton("Upload");
             uploadButton.setBounds(250, 480, 80, 30);
@@ -275,9 +351,7 @@ public class GUIMain {
 
             // Add action listener to show upload button when a file is selected
             for (JCheckBox checkBox : checkBoxes) {
-                checkBox.addActionListener(e -> {
-                    uploadButton.setVisible(true);
-                });
+                checkBox.addActionListener(e -> uploadButton.setVisible(checkBox.isSelected()));
             }
 
             // Add action listener to upload button
@@ -301,7 +375,7 @@ public class GUIMain {
 
                 if (desyncfiles != null && !desyncfiles.isEmpty()) {
                     // Here, you need to convert 'desyncfiles' to a list of file paths to upload
-                    List<Path> filesToUpload = convertDesyncFilesToPath(desyncfiles);
+                    List<Path> filesToUpload = convert_ListString_To_ListPath(desyncfiles);
                     boolean upload = fileOperationView.uploadfiles(filesToUpload);
                 } else {
                     // Upload selected files
@@ -330,14 +404,14 @@ public class GUIMain {
 
                 if (desyncfiles != null && !desyncfiles.isEmpty()) {
                     // Here, you need to convert 'desyncfiles' to a list of file paths to upload
-                    List<Path> filesToUpload = convertDesyncFilesToPath(desyncfiles);
+                    List<Path> filesToUpload = convert_ListString_To_ListPath(desyncfiles);
                     boolean upload = fileOperationView.uploadfiles(filesToUpload);
                 }
             });
         }
     }
 
-    private static List<Path> convertDesyncFilesToPath(List<String> desyncfiles) {
+    private static List<Path> convert_ListString_To_ListPath(List<String> desyncfiles) {
         System.out.println("Pre-conversion: " + desyncfiles);
         List<Path> filesToUpload = new ArrayList<>();
         for (String desyncfile : desyncfiles) {
