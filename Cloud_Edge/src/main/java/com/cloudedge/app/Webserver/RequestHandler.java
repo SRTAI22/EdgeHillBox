@@ -6,7 +6,10 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.fileupload.servlet.ServletRequestContext;
 import org.apache.http.*;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 import org.apache.http.util.EntityUtils;
@@ -14,10 +17,12 @@ import org.apache.http.util.EntityUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 import org.json.JSONObject;
@@ -32,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Arrays;
 
 //file upload imports
 import org.apache.commons.fileupload.FileItem;
@@ -41,6 +47,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 
 public class RequestHandler {
     private static String username;
+    private static Path userPath;
 
     // List remote files
     public static class ListFiles implements HttpRequestHandler {
@@ -51,11 +58,11 @@ public class RequestHandler {
             if (request.containsHeader("list-remote")) {
                 // initialise the user box
                 PathManager pathManager = new PathManager();
-                Path path = pathManager.init_User(username);
+                userPath = pathManager.init_User(username);
 
                 // get remote files
                 FileManager fileManager = new FileManager();
-                List<Path> remoteList = fileManager.getFilesFromLocalBox(path);
+                List<Path> remoteList = fileManager.getFilesFromLocalBox(userPath);
                 System.out.println("list endpoint active");
                 System.out.println("remote list: " + remoteList);
 
@@ -253,12 +260,12 @@ public class RequestHandler {
                     // Assume that FileManager and PathManager are working correctly
                     FileManager fileManager = new FileManager();
                     PathManager pathManager = new PathManager();
-                    Path path = pathManager.init_User(username);
+                    userPath = pathManager.init_User(username);
 
                     // Add the files to the user's box
                     for (File file : uploadedFiles) {
                         System.out.println("Processing: " + file);
-                        Path filePath = path.resolve(file.getName());
+                        Path filePath = userPath.resolve(file.getName());
 
                         if (Files.exists(filePath)) {
                             // Replace existing file
@@ -348,8 +355,8 @@ public class RequestHandler {
             // init user
             PathManager pathManager = new PathManager();
             FileManager fileManager = new FileManager();
-            Path path = pathManager.init_User(username);
-            List<Path> files = fileManager.getFilesFromLocalBox(path);
+            userPath = pathManager.init_User(username);
+            List<Path> files = fileManager.getFilesFromLocalBox(userPath);
 
             // DEBUG: List files found in local box
             System.out.println("DEBUG: Local files: " + files);
@@ -407,7 +414,7 @@ public class RequestHandler {
         @Override
         public void handle(HttpRequest request, HttpResponse response, HttpContext context)
                 throws HttpException, IOException {
-            if (request.containsHeader("download")) {
+            if (request.containsHeader("file-download")) {
                 // on request download
                 downloadRequest(request, response, context);
             }
@@ -430,18 +437,51 @@ public class RequestHandler {
         }
 
         // hanlde download request
-        private void downloadRequest(HttpRequest request, HttpResponse response, HttpContext context) {
+        private void downloadRequest(HttpRequest request, HttpResponse response, HttpContext context)
+                throws ParseException, IOException {
+            if (request instanceof HttpEntityEnclosingRequest) {
+                HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
+                String json = EntityUtils.toString(entity);
 
+                // init path manager
+
+                // Deserialize JSON to get the list of filenames
+                Gson gson = new Gson();
+                List<String> fileNames = gson.fromJson(json, new TypeToken<List<String>>() {
+                }.getType());
+
+                MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+
+                // Loop through each file name, verify it exists, and add it to the multipart
+                // entity
+                for (String fileName : fileNames) {
+                    Path fileToDownload = Path.of(fileName);
+                    if (Files.exists(fileToDownload)) {
+                        File file = fileToDownload.toFile();
+                        builder.addBinaryBody("file", file, ContentType.APPLICATION_OCTET_STREAM, file.getName());
+                    } else {
+                        System.out.println("File not found: " + fileName);
+                    }
+                }
+
+                // Build the multipart entity
+                HttpEntity multipart = builder.build();
+
+                response.setEntity(multipart);
+                response.setStatusCode(HttpStatus.SC_OK);
+            } else {
+                response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+            }
         }
+    }
 
-        // auto-sync donwload
-        private void fileDownload(HttpRequest request, HttpResponse response, HttpContext context) {
+    // auto-sync download
+    private static void fileDownload(HttpRequest request, HttpResponse response, HttpContext context) {
 
-        }
+    }
 
-        // sync-check
-        private void synCheck(HttpRequest request, HttpResponse response, HttpContext context) {
+    // sync-check
+    private static void synCheck(HttpRequest request, HttpResponse response, HttpContext context) {
 
-        }
     }
 }

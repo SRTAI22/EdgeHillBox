@@ -306,7 +306,6 @@ public class GUIMain {
 
                 filePanel.add(checkBox, BorderLayout.EAST);
                 filePanel.add(fileNameLabel, BorderLayout.CENTER);
-                // ... set size and add to panel
 
                 cloudFilesPanel.add(filePanel);
                 remoteCheckBoxes.add(checkBox);
@@ -326,14 +325,24 @@ public class GUIMain {
             // Action listener for download button
             downloadButton.addActionListener(e -> {
                 List<String> selectedFilesToDownload = new ArrayList<>();
-                for (JCheckBox checkBox : remoteCheckBoxes) {
+                for (int i = 0; i < remoteCheckBoxes.size(); i++) {
+                    JCheckBox checkBox = remoteCheckBoxes.get(i);
                     if (checkBox.isSelected()) {
-                        selectedFilesToDownload.add(checkBox.getText());
+                        String remoteFile = remoteFiles.get(i);
+                        System.out.println("GUI selected remote file: " + remoteFile);
+                        selectedFilesToDownload.add(remoteFile);
                     }
                 }
                 if (!selectedFilesToDownload.isEmpty()) {
                     // Perform download operation
-                    fileOperationView.downloadfiles(selectedFilesToDownload);
+                    Boolean result = fileOperationView.downloadFiles(selectedFilesToDownload);
+                    System.out.println("Download operation: " + result);
+
+                    if (result) {
+                        JOptionPane.showMessageDialog(frame, "Files downloaded sucessfully"); // display success message
+                    } else {
+                        JOptionPane.showMessageDialog(frame, "Error while downloading files"); // display error message
+                    }
                 }
 
                 // Deselect all checkboxes and hide download button

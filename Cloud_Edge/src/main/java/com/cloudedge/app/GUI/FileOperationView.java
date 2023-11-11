@@ -6,6 +6,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,7 +15,10 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.apache.commons.fileupload.MultipartStream;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
 import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -24,6 +28,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.http.entity.mime.MIME;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -213,49 +218,49 @@ public class FileOperationView {
     }
     // compare client side
 
+    // Assuming EdgeHillBox directory is in the user's home directory
+    private final Path edgeHillBoxDirectory = Paths.get(System.getProperty("user.home"), "EdgeHillBox");
+
     // Download files
-    Boolean downloadfiles(List<String> selectedFilesToDownload) {
+    public Boolean downloadFiles(List<String> selectedFilesToDownload) {
         System.out.println("Downloading files...");
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpPost downloadFile = new HttpPost("http://localhost:8080/download");
-
-            // Add custom header to indicate this is a file download request
             downloadFile.addHeader("file-download", "true");
 
-            // Convert the list of files to a JSON string
             Gson gson = new GsonBuilder().create();
             String json = gson.toJson(selectedFilesToDownload);
 
-            // Add the JSON string to the request body
             StringEntity requestEntity = new StringEntity(json, ContentType.APPLICATION_JSON);
             downloadFile.setEntity(requestEntity);
 
-            // Execute the request and get the response
             try (CloseableHttpResponse response = httpClient.execute(downloadFile)) {
                 HttpEntity responseEntity = response.getEntity();
 
-                // Loop over each file and save it to disk
-                for (String fileName : selectedFilesToDownload) {
-                    Path filePath = getFileByName(fileName);
-                    File file = filePath.toFile();
-                    try (BufferedInputStream bis = new BufferedInputStream(responseEntity.getContent());
-                            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file))) {
-                        byte[] buffer = new byte[1024];
-                        int bytesRead;
-                        while ((bytesRead = bis.read(buffer)) != -1) {
-                            bos.write(buffer, 0, bytesRead);
+                if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && responseEntity != null) {
+                    // Handling multipart response
+                    if (responseEntity.isMultipart()) {
+                        for (HttpEntity part : responseEntity.getParts()) {
+                            Header contentDispositionHeader = part.getHeader(MIME.CONTENT_DISPOSITION);
+                            String fileName = getFileName(contentDispositionHeader);
+                            // Write the file to the EdgeHillBox directory
+                            Path fileToWritePath = edgeHillBoxDirectory.resolve(fileName);
+                            Files.copy(part.getContent(), fileToWritePath, StandardCopyOption.REPLACE_EXISTING);
+                            System.out.println("Downloaded and saved: " + fileName);
                         }
                     }
+                } else {
+                    // Handle response codes other than 200 OK here
+                    System.out.println(
+                            "Failed to download files. Status code: " + response.getStatusLine().getStatusCode());
+                    return false;
                 }
-                System.out.println("Files downloaded successfully.");
+                System.out.println("All files downloaded successfully.");
                 return true;
             } catch (IOException e) {
                 System.out.println("Error while downloading files. Error: " + e);
                 return false;
             }
-        } catch (IOException e) {
-            System.out.println("Error while downloading files. Error: " + e);
-            return false;
         }
     }
 

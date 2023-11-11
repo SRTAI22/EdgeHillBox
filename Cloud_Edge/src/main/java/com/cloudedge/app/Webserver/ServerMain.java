@@ -7,6 +7,7 @@ import com.cloudedge.app.Webserver.RequestHandler.ListFiles;
 import com.cloudedge.app.Webserver.RequestHandler.CredentialValidation;
 import com.cloudedge.app.Webserver.RequestHandler.statusHandler;
 import com.cloudedge.app.Webserver.RequestHandler.upload;
+import com.cloudedge.app.Webserver.RequestHandler.download;
 
 // local imports
 import com.cloudedge.app.Webserver.PathManager;
@@ -25,6 +26,7 @@ public class ServerMain {
                 .registerHandler("/validate", new CredentialValidation())
                 .registerHandler("/status", new statusHandler())
                 .registerHandler("/upload", new upload())
+                .registerHandler("/download", new download())
                 .create();
         System.out.println("Server on.");
 
