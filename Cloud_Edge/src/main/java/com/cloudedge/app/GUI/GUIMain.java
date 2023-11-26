@@ -335,14 +335,19 @@ public class GUIMain {
                 }
                 if (!selectedFilesToDownload.isEmpty()) {
                     // Perform download operation
-                    Boolean result = fileOperationView.downloadFiles(selectedFilesToDownload);
-                    System.out.println("Download operation: " + result);
-
-                    if (result) {
-                        JOptionPane.showMessageDialog(frame, "Files downloaded sucessfully"); // display success message
-                    } else {
+                    Boolean result;
+                    try {
+                        result = fileOperationView.downloadFiles(selectedFilesToDownload);
+                        if (result) {
+                            JOptionPane.showMessageDialog(frame, "Files downloaded sucessfully"); // display success
+                                                                                                  // message
+                        }
+                        System.out.println("Download operation: " + result);
+                    } catch (IOException e1) {
                         JOptionPane.showMessageDialog(frame, "Error while downloading files"); // display error message
+                        e1.printStackTrace();
                     }
+
                 }
 
                 // Deselect all checkboxes and hide download button

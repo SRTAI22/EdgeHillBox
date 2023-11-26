@@ -9,6 +9,7 @@ import org.apache.http.*;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
@@ -415,6 +416,7 @@ public class RequestHandler {
         public void handle(HttpRequest request, HttpResponse response, HttpContext context)
                 throws HttpException, IOException {
             if (request.containsHeader("file-download")) {
+                System.out.println("Runnign download request function");
                 // on request download
                 downloadRequest(request, response, context);
             }
@@ -436,14 +438,11 @@ public class RequestHandler {
             }
         }
 
-        // hanlde download request
         private void downloadRequest(HttpRequest request, HttpResponse response, HttpContext context)
                 throws ParseException, IOException {
             if (request instanceof HttpEntityEnclosingRequest) {
                 HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
                 String json = EntityUtils.toString(entity);
-
-                // init path manager
 
                 // Deserialize JSON to get the list of filenames
                 Gson gson = new Gson();
@@ -451,37 +450,53 @@ public class RequestHandler {
                 }.getType());
 
                 MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+                builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+
+                boolean allFilesExist = true;
 
                 // Loop through each file name, verify it exists, and add it to the multipart
                 // entity
-                for (String fileName : fileNames) {
-                    Path fileToDownload = Path.of(fileName);
+                for (String fullPath : fileNames) {
+                    String sanitizedPath = fullPath.replaceAll("[\\[\\]]", "");
+                    System.out.println("sani: " + sanitizedPath);
+                    Path fileToDownload = Paths.get(sanitizedPath);
                     if (Files.exists(fileToDownload)) {
                         File file = fileToDownload.toFile();
                         builder.addBinaryBody("file", file, ContentType.APPLICATION_OCTET_STREAM, file.getName());
                     } else {
-                        System.out.println("File not found: " + fileName);
+                        System.out.println("File not found: " + sanitizedPath);
+                        allFilesExist = false;
+                        break;
                     }
                 }
 
-                // Build the multipart entity
-                HttpEntity multipart = builder.build();
-
-                response.setEntity(multipart);
-                response.setStatusCode(HttpStatus.SC_OK);
+                if (allFilesExist) {
+                    // Build the multipart entity
+                    HttpEntity multipart = builder.build();
+                    // Ensure the correct content type with boundary is set
+                    response.setHeader("Content-Type", multipart.getContentType().getValue());
+                    response.setEntity(multipart);
+                    response.setStatusCode(HttpStatus.SC_OK);
+                    System.out.println("Sent file");
+                } else {
+                    // Handle missing files scenario
+                    response.setStatusCode(HttpStatus.SC_NOT_FOUND);
+                    response.setEntity(new StringEntity("One or more files not found"));
+                }
             } else {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+                response.setEntity(new StringEntity("Invalid request"));
             }
         }
-    }
 
-    // auto-sync download
-    private static void fileDownload(HttpRequest request, HttpResponse response, HttpContext context) {
+        // auto-sync download
+        private static void fileDownload(HttpRequest request, HttpResponse response, HttpContext context) {
 
-    }
+        }
 
-    // sync-check
-    private static void synCheck(HttpRequest request, HttpResponse response, HttpContext context) {
+        // sync-check
+        private static void synCheck(HttpRequest request, HttpResponse response, HttpContext context) {
 
+        }
     }
 }

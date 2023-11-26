@@ -11,14 +11,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import org.apache.commons.fileupload.MultipartStream;
 import org.apache.http.Header;
+import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -28,7 +32,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MIME;
+import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -219,10 +225,10 @@ public class FileOperationView {
     // compare client side
 
     // Assuming EdgeHillBox directory is in the user's home directory
-    private final Path edgeHillBoxDirectory = Paths.get(System.getProperty("user.home"), "EdgeHillBox");
+    private final Path edgeHillBoxDirectory = Paths
+            .get("/Users/neliobarbosa/Coding/University/OOP/Edgehillbox/EdgeHillBox/Cloud_Edge/EdgeHillBox");
 
-    // Download files
-    public Boolean downloadFiles(List<String> selectedFilesToDownload) {
+    Boolean downloadFiles(List<String> selectedFilesToDownload) throws IOException {
         System.out.println("Downloading files...");
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpPost downloadFile = new HttpPost("http://localhost:8080/download");
@@ -230,7 +236,6 @@ public class FileOperationView {
 
             Gson gson = new GsonBuilder().create();
             String json = gson.toJson(selectedFilesToDownload);
-
             StringEntity requestEntity = new StringEntity(json, ContentType.APPLICATION_JSON);
             downloadFile.setEntity(requestEntity);
 
@@ -238,15 +243,29 @@ public class FileOperationView {
                 HttpEntity responseEntity = response.getEntity();
 
                 if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && responseEntity != null) {
-                    // Handling multipart response
-                    if (responseEntity.isMultipart()) {
-                        for (HttpEntity part : responseEntity.getParts()) {
-                            Header contentDispositionHeader = part.getHeader(MIME.CONTENT_DISPOSITION);
-                            String fileName = getFileName(contentDispositionHeader);
-                            // Write the file to the EdgeHillBox directory
-                            Path fileToWritePath = edgeHillBoxDirectory.resolve(fileName);
-                            Files.copy(part.getContent(), fileToWritePath, StandardCopyOption.REPLACE_EXISTING);
-                            System.out.println("Downloaded and saved: " + fileName);
+                    // Get the boundary from the Content-Type header
+                    String boundary = extractBoundary(responseEntity.getContentType().getValue());
+
+                    if (boundary != null) {
+                        // Create a MultipartStream to parse the response
+                        MultipartStream multipartStream = new MultipartStream(responseEntity.getContent(),
+                                boundary.getBytes(), 4096, null);
+
+                        boolean nextPart = multipartStream.skipPreamble();
+                        while (nextPart) {
+                            String headers = multipartStream.readHeaders();
+                            String fileName = extractFileNameFromHeaders(headers);
+
+                            if (fileName != null) {
+                                Path fileToWritePath = edgeHillBoxDirectory.resolve(fileName);
+                                try (BufferedOutputStream out = new BufferedOutputStream(
+                                        new FileOutputStream(fileToWritePath.toFile(), false))) {
+                                    multipartStream.readBodyData(out);
+                                }
+                                System.out.println("Downloaded and saved: " + fileName);
+                            }
+
+                            nextPart = multipartStream.readBoundary();
                         }
                     }
                 } else {
@@ -257,11 +276,41 @@ public class FileOperationView {
                 }
                 System.out.println("All files downloaded successfully.");
                 return true;
-            } catch (IOException e) {
-                System.out.println("Error while downloading files. Error: " + e);
-                return false;
+            }
+        } catch (IOException e) {
+            System.out.println("Error while downloading files. Error: " + e);
+            return false;
+        }
+    }
+
+    private String extractBoundary(String contentType) {
+        Pattern pattern = Pattern.compile("boundary=(.*)");
+        Matcher matcher = pattern.matcher(contentType);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String extractFileNameFromHeaders(String headers) {
+        Pattern pattern = Pattern.compile("filename=\"([^\"]*)\"");
+        Matcher matcher = pattern.matcher(headers);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String getFileName(Header contentDispositionHeader) {
+        // Parse the Content-Disposition header to extract the filename
+        HeaderElement[] elements = contentDispositionHeader.getElements();
+        for (HeaderElement element : elements) {
+            NameValuePair nameValuePair = element.getParameterByName("filename");
+            if (nameValuePair != null) {
+                return nameValuePair.getValue();
             }
         }
+        return null;
     }
 
     // compare client side
