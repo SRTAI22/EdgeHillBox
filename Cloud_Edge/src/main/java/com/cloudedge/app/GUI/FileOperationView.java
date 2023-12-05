@@ -44,7 +44,7 @@ public class FileOperationView {
     // create edgehillbox folder
     boolean Check_local_Box() {
         // Locate/Create EdgeHillBox Folder
-        File dir = new File("EdgeHillBox");
+        File dir = new File("CloudEdgeBox");
 
         // check if directory already exist
         if (!dir.exists()) {
@@ -60,7 +60,7 @@ public class FileOperationView {
     // get files from local Box
     public List<Path> getFilesFromLocalBox() {
         List<Path> files = new ArrayList<>();
-        File dir = new File("EdgeHillBox");
+        File dir = new File("CloudEdgeBox");
 
         if (dir.exists() && dir.isDirectory()) {
             File[] filesInDir = dir.listFiles();
@@ -200,7 +200,7 @@ public class FileOperationView {
         System.out.println("Files to be uploaded: " + files);
 
         // Loop over each file path and add it to the multipart entity
-        int counter = 1; // Initialize a counter variable
+        int counter = 1; // Initialise a counter variable
         for (Path filePath : files) {
             System.out.println("Currently processing file: " + filePath);
             File file = filePath.toFile();
@@ -226,7 +226,7 @@ public class FileOperationView {
 
     // Assuming EdgeHillBox directory is in the user's home directory
     private final Path edgeHillBoxDirectory = Paths
-            .get("/Users/neliobarbosa/Coding/University/OOP/Edgehillbox/EdgeHillBox/Cloud_Edge/EdgeHillBox");
+            .get("/Users/neliobarbosa/Coding/University/OOP/Edgehillbox/EdgeHillBox/CloudEdgeBox");
 
     Boolean downloadFiles(List<String> selectedFilesToDownload) throws IOException {
         System.out.println("Downloading files...");
