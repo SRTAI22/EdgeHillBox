@@ -79,4 +79,16 @@ public class FileManager {
         return null;
     }
 
+    // delete files
+    void deleteFiles(Path userpath, List<Path> filesToDelete) {
+        for (Path file : filesToDelete) {
+            Path filePath = Paths.get(userpath.toString(), file.getFileName().toString());
+            System.out.println("Deleting file: " + filePath);
+            try {
+                Files.delete(filePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

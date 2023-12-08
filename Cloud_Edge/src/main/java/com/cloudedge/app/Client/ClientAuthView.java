@@ -1,4 +1,4 @@
-package com.cloudedge.app.GUI;
+package com.cloudedge.app.Client;
 
 import java.io.IOException;
 
@@ -17,7 +17,7 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONObject;
 
 public class ClientAuthView {
-    boolean validate_credentials(JFrame frame, String username, String password) {
+    public boolean validate_credentials(JFrame frame, String username, String password) {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpPost httpPost = new HttpPost("http://localhost:8080/validate");
         JSONObject json = new JSONObject();
@@ -58,8 +58,8 @@ public class ClientAuthView {
         return false;
     }
 
-    boolean create_user(JFrame frame, String username, String password) {
-        // code to create a user by send new details to webserver and storing it in
+    public boolean create_user(JFrame frame, String username, String password) {
+        // code to create a user by sending new details to webserver and storing it in
         // credentials file
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpPost httpPost = new HttpPost("http://localhost:8080/validate");
@@ -92,7 +92,7 @@ public class ClientAuthView {
                             options[0]);
 
                     if (response == 0) {
-                        // Sedn to login page
+                        // Send to login page
                         GUIMain.login_page(frame);
                     }
                 } else {

@@ -2,7 +2,7 @@ package com.cloudedge.app.Webserver;
 
 import org.apache.http.impl.bootstrap.HttpServer;
 import org.apache.http.impl.bootstrap.ServerBootstrap;
-import com.cloudedge.app.Webserver.RequestHandler.HelloHandler;
+import com.cloudedge.app.Webserver.RequestHandler.DeletionHandler;
 import com.cloudedge.app.Webserver.RequestHandler.ListFiles;
 import com.cloudedge.app.Webserver.RequestHandler.CredentialValidation;
 import com.cloudedge.app.Webserver.RequestHandler.statusHandler;
@@ -22,7 +22,7 @@ public class ServerMain {
         HttpServer server = ServerBootstrap.bootstrap()
                 .setListenerPort(8080)
                 .registerHandler("/list", new ListFiles())
-                .registerHandler("/hello", new HelloHandler())
+                .registerHandler("/delete", new DeletionHandler())
                 .registerHandler("/validate", new CredentialValidation())
                 .registerHandler("/status", new statusHandler())
                 .registerHandler("/upload", new upload())

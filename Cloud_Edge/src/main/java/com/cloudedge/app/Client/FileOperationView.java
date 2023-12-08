@@ -1,4 +1,4 @@
-package com.cloudedge.app.GUI;
+package com.cloudedge.app.Client;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -42,19 +42,31 @@ import com.google.gson.GsonBuilder;
 public class FileOperationView {
 
     // create edgehillbox folder
-    boolean Check_local_Box() {
+    public String createCloudEdgeBoxFolder() {
         // Locate/Create EdgeHillBox Folder
         File dir = new File("CloudEdgeBox");
 
-        // check if directory already exist
+        // check if directory already exists
         if (!dir.exists()) {
-            dir.mkdir(); // create directory
-            return true;
-        } else if (dir.exists()) {
+            if (dir.mkdir()) { // create directory
+                return dir.getAbsolutePath();
+            }
+        }
+        return dir.getAbsolutePath();
+    }
+
+    // check if local Box exists
+    public boolean Check_local_Box() {
+        // Locate EdgeHillBox Folder
+        File dir = new File("CloudEdgeBox");
+
+        // check if directory exists
+        if (dir.exists()) {
             return true;
         } else {
-            return false;
+            createCloudEdgeBoxFolder();
         }
+        return false;
     }
 
     // get files from local Box
@@ -74,7 +86,7 @@ public class FileOperationView {
     }
 
     // Calculate checksum
-    String calculateChecksum(Path file) {
+    public String calculateChecksum(Path file) {
         try {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
             try (FileInputStream fileInput = new FileInputStream(file.toFile())) {
@@ -88,7 +100,6 @@ public class FileOperationView {
             byte[] digestBytes = messageDigest.digest();
             BigInteger bigInt = new BigInteger(1, digestBytes);
 
-            // Converting to hexadecimal might lead to leading zeros being removed.
             String hash = bigInt.toString(16);
 
             // As SHA-256 generates a fixed size hash, we pad it with zeros at the beginning
@@ -104,14 +115,9 @@ public class FileOperationView {
         return null;
     }
 
-    // upload via drag and drop
-
     // send local files for comparison
-    List<String> fileSyncCheck(Map<String, String> filesum) {
+    public List<String> fileSyncCheck(Map<String, String> filesum) {
         try {
-            // DEBUG: Print to check what we are sending
-            System.out.println("DEBUG: Sending filesum map: " + filesum.toString());
-
             // Create HttpClient
             CloseableHttpClient httpClient = HttpClients.createDefault();
 
@@ -135,27 +141,15 @@ public class FileOperationView {
                 HttpEntity responseEntity = response.getEntity();
                 String result = EntityUtils.toString(responseEntity, StandardCharsets.UTF_8);
 
-                // DEBUG: Print to check received response
-                System.out.println("DEBUG: Received response: " + result);
-
                 if (response.getStatusLine().getStatusCode() == 409) {
                     System.out.println("Files not in sync");
 
-                    // DEBUG: What files are we talking about?
-                    System.out.println("DEBUG: Files to be synced: " + result);
-
                     String[] files = result.split(": ")[1].split(", ");
-
-                    // DEBUG: Check the parsed files array
-                    System.out.println("DEBUG: Parsed files array: " + Arrays.toString(files));
 
                     List<String> paths = new ArrayList<>();
 
                     for (String file : files) {
                         String path = getFileByName(file).toString();
-
-                        // DEBUG: What path are we returning?
-                        System.out.println("DEBUG: Returning path: " + path);
 
                         paths.add(path);
                     }
@@ -182,7 +176,7 @@ public class FileOperationView {
     }
 
     // upload file
-    Boolean uploadfiles(List<Path> files) {
+    public Boolean uploadfiles(List<Path> files) {
         System.out.println("Uploading...");
 
         // Create HttpClient
@@ -224,11 +218,14 @@ public class FileOperationView {
     }
     // compare client side
 
-    // Assuming EdgeHillBox directory is in the user's home directory
-    private final Path edgeHillBoxDirectory = Paths
-            .get("/Users/neliobarbosa/Coding/University/OOP/Edgehillbox/EdgeHillBox/CloudEdgeBox");
+    // convert string path to path
+    private static Path convertStringToPath(String desyncFile) {
+        return Paths.get(desyncFile.trim());
+    }
 
-    Boolean downloadFiles(List<String> selectedFilesToDownload) throws IOException {
+    private final Path edgeHillBoxDirectory = convertStringToPath(createCloudEdgeBoxFolder());
+
+    public Boolean downloadFiles(List<String> selectedFilesToDownload) throws IOException {
         System.out.println("Downloading files...");
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpPost downloadFile = new HttpPost("http://localhost:8080/download");
@@ -316,7 +313,7 @@ public class FileOperationView {
     // compare client side
 
     // List remote files
-    List<String> getRemoteFiles() throws IOException {
+    public List<String> getRemoteFiles() throws IOException {
         List<String> remoteList = new ArrayList<>();
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpPost listfile = new HttpPost("http://localhost:8080/list");
@@ -341,6 +338,41 @@ public class FileOperationView {
         }
         return remoteList;
 
+    }
+
+    // delete files
+    public Boolean deleteFiles(List<String> selectedFilesToDelete) throws IOException {
+        System.out.println("Deleting files...");
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpPost deleteFile = new HttpPost("http://localhost:8080/delete");
+
+            // set valid header
+            deleteFile.setHeader("delete-files", "true");
+
+            Gson gson = new GsonBuilder().create();
+            String json = gson.toJson(selectedFilesToDelete);
+            StringEntity requestEntity = new StringEntity(json, ContentType.APPLICATION_JSON);
+            deleteFile.setEntity(requestEntity);
+
+            try (CloseableHttpResponse response = httpClient.execute(deleteFile)) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode == HttpStatus.SC_OK) {
+                    HttpEntity responseEntity = response.getEntity();
+                    String result = EntityUtils.toString(responseEntity);
+                    System.out.println("Server Response: " + result);
+                    return true;
+                } else {
+                    System.out.println("Failed to delete files. Status code: " + statusCode);
+                    return false;
+                }
+            } catch (ClientProtocolException cpe) {
+                System.out.println("Client Protocol Exception while deleting files. Error: " + cpe);
+                throw cpe;
+            } catch (IOException ioe) {
+                System.out.println("IO Exception while deleting files. Error: " + ioe);
+                throw ioe;
+            }
+        }
     }
 
 }

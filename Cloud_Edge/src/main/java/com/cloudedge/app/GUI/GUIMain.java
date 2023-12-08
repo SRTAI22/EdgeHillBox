@@ -2,10 +2,10 @@ package com.cloudedge.app.GUI;
 
 // Local imports 
 import com.cloudedge.app.GUI.GUIMain;
-import com.cloudedge.app.GUI.ClientAuthView;
+import com.cloudedge.app.Client.ClientAuthView;
+import com.cloudedge.app.Client.FileOperationView;
+import com.cloudedge.app.Client.ServerStatusView;
 import com.cloudedge.app.Webserver.ServerMain;
-import com.cloudedge.app.GUI.ServerStatusView;
-import com.cloudedge.app.GUI.FileOperationView;
 
 // UI imports
 import javax.swing.*;
@@ -169,7 +169,7 @@ public class GUIMain {
 
     public static void main_page(JFrame frame) throws IOException {
         FileOperationView fileOperationView = new FileOperationView();
-        boolean localbox = fileOperationView.Check_local_Box(); // initialise EdgeHillBox folder
+        boolean localbox = fileOperationView.Check_local_Box(); // initialise CloudEdgeBox folder
 
         // main page design and code which will call upon sub function to make post
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -229,100 +229,53 @@ public class GUIMain {
             List<String> remoteFiles = fileOperationView.getRemoteFiles(); // get remote files
             System.out.println("Remote files: " + remoteFiles);
 
-            // Create a list of checkboxes to select files to upload
-            List<JCheckBox> checkBoxes = new ArrayList<>();
-            for (Path file : files) {
-                JPanel filePanel = new JPanel();
-                filePanel.setLayout(new BorderLayout());
-                filePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-                filePanel.setBackground(Color.lightGray);
-                filePanel.setAlignmentX(Component.LEFT_ALIGNMENT); // align to the left
-
-                JCheckBox checkBox = new JCheckBox();
-                checkBox.setHorizontalAlignment(SwingConstants.LEFT); // align to the left
-                checkBox.setOpaque(false); // make checkbox transparent
-                checkBox.setActionCommand(file.toString()); // Set the action command to the file path
-                checkBox.addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-                        checkBox.setBackground(new Color(200, 200, 200)); // set darker shade when hovering
-                    }
-
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-                        checkBox.setBackground(null);
-                    }
-                });
-
-                JLabel fileNameLabel = new JLabel(file.getFileName().toString());
-                fileNameLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                fileNameLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
-                int width = 180;
-                filePanel.add(checkBox, BorderLayout.EAST);
-                filePanel.add(fileNameLabel, BorderLayout.CENTER);
-                filePanel.setPreferredSize(new Dimension(width, 20));
-                filePanel.setMaximumSize(new Dimension(width, 20));
-                filePanel.setMinimumSize(new Dimension(width, 20));
-                localFilesPanel.add(filePanel);
-                checkBoxes.add(checkBox);
-            }
-            // Remote Files label and panel
-
-            // Create a list of checkboxes for remote files
-            List<JCheckBox> remoteCheckBoxes = new ArrayList<>();
-            for (String remoteFile : remoteFiles) {
-                JPanel filePanel = new JPanel();
-                filePanel.setLayout(new BorderLayout());
-                filePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-                filePanel.setBackground(Color.lightGray);
-
-                JCheckBox checkBox = new JCheckBox();
-                checkBox.setHorizontalAlignment(SwingConstants.LEFT);
-                checkBox.setOpaque(false);
-                checkBox.addMouseListener(new MouseAdapter() {
-
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-                        checkBox.setBackground(new Color(200, 200, 200)); // set darker shade when hovering
-                    }
-
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-                        checkBox.setBackground(null);
-                    }
-                });
-
-                JLabel fileNameLabel = new JLabel(
-                        remoteFile);
-                fileNameLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                fileNameLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
-                int width = 180;
-                filePanel.add(checkBox, BorderLayout.EAST);
-                filePanel.add(fileNameLabel, BorderLayout.CENTER);
-                filePanel.setPreferredSize(new Dimension(width, 20));
-                filePanel.setMaximumSize(new Dimension(width, 20));
-                filePanel.setMinimumSize(new Dimension(width, 20));
-                localFilesPanel.add(filePanel);
-                checkBoxes.add(checkBox);
-
-                filePanel.add(checkBox, BorderLayout.EAST);
-                filePanel.add(fileNameLabel, BorderLayout.CENTER);
-
-                cloudFilesPanel.add(filePanel);
-                remoteCheckBoxes.add(checkBox);
-            }
-
             // Download button
             JButton downloadButton = new JButton("Download");
             downloadButton.setBounds(430, 480, 100, 30); // Adjust position as
                                                          // needed
-            downloadButton.setVisible(false);
-            frame.add(downloadButton);
+            // Upload button
+            JButton uploadButton = new JButton(
+                    "Upload");
+            uploadButton.setBounds(250, 480, 80, 30);
 
-            // Action listener to show download button when a remote file is selected
-            for (JCheckBox checkBox : remoteCheckBoxes) {
-                checkBox.addActionListener(e -> downloadButton.setVisible(checkBox.isSelected()));
+            // Delete button
+            JButton deleteButton = new JButton("Delete");
+            deleteButton.setBounds(50, 120, 100, 30);
+            frame.add(deleteButton);
+            deleteButton.setVisible(true);
+
+            // Local Files Panel
+            List<JCheckBox> checkBoxes = new ArrayList<>();
+            for (Path file : files) {
+                JCheckBox checkBox = new JCheckBox();
+                checkBox.setActionCommand(file.toString());
+                checkBox.setOpaque(false);
+                checkBox.setHorizontalAlignment(SwingConstants.LEFT);
+                checkBoxes.add(checkBox);
+
+                JPanel filePanel = createFilePanel(checkBox, uploadButton); // Pass checkbox and upload button
+                localFilesPanel.add(filePanel);
             }
+
+            // Remote Files Panel
+            List<JCheckBox> remoteCheckBoxes = new ArrayList<>();
+            for (String remoteFile : remoteFiles) {
+                JCheckBox checkBox = new JCheckBox();
+                checkBox.setActionCommand(remoteFile);
+                checkBox.setOpaque(false);
+                checkBox.setHorizontalAlignment(SwingConstants.LEFT);
+                remoteCheckBoxes.add(checkBox);
+
+                JPanel filePanel = createFilePanel(checkBox, downloadButton); // Pass checkbox and download button
+                cloudFilesPanel.add(filePanel);
+            }
+
+            // After adding all file panels
+            uploadButton.setVisible(true);
+            downloadButton.setVisible(true);
+
+            frame.add(downloadButton);
+            frame.add(uploadButton);
 
             // Action listener for download button
             downloadButton.addActionListener(e -> {
@@ -356,20 +309,22 @@ public class GUIMain {
                 for (JCheckBox checkBox : remoteCheckBoxes) {
                     checkBox.setSelected(false);
                 }
+                try {
+                    refreshFileDisplay(localFilesPanel, cloudFilesPanel, fileOperationView, downloadButton,
+                            downloadButton);
+                    // After adding all file panels
+                    uploadButton.setVisible(true);
+                    downloadButton.setVisible(true);
+
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+
                 downloadButton.setVisible(false);
             });
 
-            // Upload button
-            JButton uploadButton = new JButton(
-                    "Upload");
-            uploadButton.setBounds(250, 480, 80, 30);
-            uploadButton.setVisible(false);
             frame.add(uploadButton);
-
-            // Add action listener to show upload button when a file is selected
-            for (JCheckBox checkBox : checkBoxes) {
-                checkBox.addActionListener(e -> uploadButton.setVisible(checkBox.isSelected()));
-            }
 
             // Add action listener to upload button
             uploadButton.addActionListener(e -> {
@@ -408,7 +363,71 @@ public class GUIMain {
                 for (JCheckBox checkBox : checkBoxes) {
                     checkBox.setSelected(false);
                 }
-                uploadButton.setVisible(false);
+                try {
+                    refreshFileDisplay(localFilesPanel, cloudFilesPanel, fileOperationView, uploadButton,
+                            downloadButton);
+                    // After adding all file panels
+                    uploadButton.setVisible(true);
+                    downloadButton.setVisible(true);
+                    JOptionPane.showMessageDialog(frame, "Upload sucessful");
+
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+                uploadButton.setVisible(true);
+            });
+
+            // Add action listener to delete button
+            deleteButton.addActionListener(e -> {
+                // Get the selected files from both the local and remote panels
+                List<String> selectedFilesToDelete = new ArrayList<>();
+
+                // Get selected files from local panel
+                for (JCheckBox checkBox : checkBoxes) {
+                    if (checkBox.isSelected()) {
+                        String localFile = checkBox.getActionCommand();
+                        System.out.println("GUI selected local file: " + localFile);
+                        selectedFilesToDelete.add(localFile);
+                    }
+                }
+
+                // Get selected files from remote panel
+                for (JCheckBox checkBox : remoteCheckBoxes) {
+                    if (checkBox.isSelected()) {
+                        String remoteFile = checkBox.getActionCommand();
+                        System.out.println("GUI selected remote file: " + remoteFile);
+                        selectedFilesToDelete.add(remoteFile);
+                    }
+                }
+
+                // Confirm the deletion
+                int confirm = JOptionPane.showConfirmDialog(frame,
+                        "Are you sure you want to delete the selected files?");
+                if (confirm != JOptionPane.YES_OPTION) {
+                    return;
+                }
+
+                // Delete the selected files from both the local and remote machines
+                try {
+                    boolean delete = fileOperationView.deleteFiles(selectedFilesToDelete);
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+
+                // Refresh the file display
+                try {
+                    refreshFileDisplay(localFilesPanel, cloudFilesPanel, fileOperationView, uploadButton,
+                            downloadButton);
+                    // After adding all file panels
+                    uploadButton.setVisible(true);
+                    downloadButton.setVisible(true);
+                    JOptionPane.showMessageDialog(frame, "Deletion sucessful");
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+                deleteButton.setVisible(true);
             });
 
             syncButton.addActionListener(e -> {
@@ -428,6 +447,14 @@ public class GUIMain {
                     // convert 'desyncfiles' to a list of file paths to upload
                     List<Path> filesToUpload = convert_ListString_To_ListPath(desyncfiles);
                     boolean upload = fileOperationView.uploadfiles(filesToUpload);
+
+                    try {
+                        refreshFileDisplay(localFilesPanel, cloudFilesPanel, fileOperationView, uploadButton,
+                                uploadButton);
+                    } catch (IOException e1) {
+                        // TODO Auto-generated catch block
+                        e1.printStackTrace();
+                    }
                 }
             });
         }
@@ -444,15 +471,6 @@ public class GUIMain {
             }
         }
         System.out.println("Paths for returned files: " + filesToUpload);
-        return filesToUpload;
-    }
-
-    private static List<String> convertDesyncFilesToList(String desyncfiles) {
-        List<String> filesToUpload = new ArrayList<>();
-        String[] fileNames = desyncfiles.split(",");
-        for (String fileName : fileNames) {
-            filesToUpload.add(fileName.trim());
-        }
         return filesToUpload;
     }
 
@@ -489,10 +507,67 @@ public class GUIMain {
         frame.setLayout(null);
     }
 
+    private static JPanel createFilePanel(JCheckBox checkBox, JButton button) {
+        JPanel filePanel = new JPanel(new BorderLayout());
+        filePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        filePanel.setBackground(Color.lightGray);
+        filePanel.setPreferredSize(new Dimension(180, 20));
+        filePanel.setMaximumSize(filePanel.getPreferredSize());
+
+        checkBox.setOpaque(false);
+        checkBox.setHorizontalAlignment(SwingConstants.LEFT);
+
+        filePanel.add(checkBox, BorderLayout.WEST);
+
+        JLabel fileNameLabel = new JLabel(checkBox.getActionCommand()); // Set label text from checkBox action command
+        fileNameLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        fileNameLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
+        filePanel.add(fileNameLabel, BorderLayout.CENTER);
+
+        // Add the download button after the file panel
+        filePanel.add(button, BorderLayout.EAST);
+
+        return filePanel;
+    }
+
+    public static void refreshFileDisplay(JPanel localFilesPanel, JPanel cloudFilesPanel,
+            final FileOperationView fileOperationView,
+            JButton uploadButton, JButton downloadButton) throws IOException {
+        // Clear existing content
+        localFilesPanel.removeAll();
+        cloudFilesPanel.removeAll();
+
+        // Repopulate local files panel
+        List<Path> localFiles = fileOperationView.getFilesFromLocalBox();
+        for (Path localFile : localFiles) {
+            JCheckBox checkBox = new JCheckBox(localFile.getFileName().toString());
+            checkBox.setActionCommand(localFile.toString());
+            JPanel filePanel = createFilePanel(checkBox, uploadButton);
+            localFilesPanel.add(filePanel);
+        }
+
+        // Repopulate cloud files panel
+        List<String> remoteFiles = fileOperationView.getRemoteFiles();
+        for (String remoteFile : remoteFiles) {
+            Path filePath = Paths.get(remoteFile);
+            JCheckBox checkBox = new JCheckBox(filePath.getFileName().toString());
+            checkBox.setActionCommand(remoteFile);
+            JPanel filePanel = createFilePanel(checkBox, downloadButton); // Added download button to the file panel
+            cloudFilesPanel.add(filePanel);
+        }
+
+        // Refresh panels
+        localFilesPanel.revalidate();
+        localFilesPanel.repaint();
+        cloudFilesPanel.revalidate();
+        cloudFilesPanel.repaint();
+    }
+
     public static void main(String[] args) {
         JFrame frame = new JFrame("Cloud-Edge"); // Create new object of Jfrmae this is the main window which will be
+                                                 // used
 
-        ServerStatusView serverStatusView = new ServerStatusView();
+        ServerStatusView serverStatusView = new ServerStatusView(); // create object of serverstatus view
         serverStatusView.connect(frame);
 
     }

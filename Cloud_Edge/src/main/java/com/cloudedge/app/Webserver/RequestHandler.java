@@ -29,6 +29,7 @@ import java.nio.file.StandardCopyOption;
 import org.json.JSONObject;
 import com.cloudedge.app.Webserver.ClientAuthenticator;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.cloudedge.app.HttpUtils;
 
@@ -75,51 +76,7 @@ public class RequestHandler {
         }
     }
 
-    public static class HelloHandler implements HttpRequestHandler {
-        @Override
-        public void handle(HttpRequest request, HttpResponse response, HttpContext context)
-                throws HttpException, IOException {
-
-            String method = request.getRequestLine().getMethod().toUpperCase();
-
-            if (method.equals("GET")) {
-                // Handle GET request
-                try {
-                    URI uri = new URI(request.getRequestLine().getUri());
-                    String name = uri.getQuery().split("=")[1];
-                    response.setStatusCode(HttpStatus.SC_OK);
-                    response.setEntity(new StringEntity("Hello, " + name + " the test worked!!"));
-                } catch (URISyntaxException | ArrayIndexOutOfBoundsException e) {
-                    response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
-                }
-            } else if (method.equals("POST")) {
-                // Handle POST request
-                HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
-                String body = EntityUtils.toString(entity);
-
-                try {
-                    // Parse JSON
-                    JSONObject json = new JSONObject(body);
-
-                    // Extract the 'name' field from JSON
-                    String name = json.getString("Name");
-
-                    // Create response
-                    response.setStatusCode(HttpStatus.SC_OK);
-                    response.setEntity(new StringEntity("Hello, " + name + " the test worked!!"));
-                } catch (Exception e) { // JSON Parsing error
-                    response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
-                    response.setEntity(new StringEntity("Invalid JSON format"));
-                }
-            } else {
-                // Unsupported method
-                response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
-            }
-        }
-    }
-
     // password validation
-
     public static class CredentialValidation implements HttpRequestHandler {
         @Override
         public void handle(HttpRequest request, HttpResponse response, HttpContext context)
@@ -155,7 +112,6 @@ public class RequestHandler {
             String password = json.getString("Password");
 
             // pass extracted values to auth
-
             ClientAuthenticator clientAuthenticator = new ClientAuthenticator();
             boolean isValid = clientAuthenticator.checkCredentials(username, password);
 
@@ -258,8 +214,6 @@ public class RequestHandler {
                     List<File> uploadedFiles = parseIncomingFiles(entity);
                     System.out.println("Files received: " + uploadedFiles);
 
-                    // Assume that FileManager and PathManager are working correctly
-                    FileManager fileManager = new FileManager();
                     PathManager pathManager = new PathManager();
                     userPath = pathManager.init_User(username);
 
@@ -344,15 +298,12 @@ public class RequestHandler {
             if (matcher.find()) {
                 return matcher.group(1);
             } else {
-                return null; // or generate a random/temporary name, depending on your requirement
+                return null;
             }
         }
 
         private void syncCheck(HttpRequest request, HttpResponse response, HttpContext context)
                 throws HttpException, IOException {
-            // DEBUG: Indicate method entry
-            System.out.println("DEBUG: Entered syncCheck");
-
             // init user
             PathManager pathManager = new PathManager();
             FileManager fileManager = new FileManager();
@@ -499,4 +450,61 @@ public class RequestHandler {
 
         }
     }
+
+    public static class DeletionHandler implements HttpRequestHandler {
+        @Override
+        public void handle(HttpRequest request, HttpResponse response, HttpContext context)
+                throws HttpException, IOException {
+
+            // Check if the request is a POST request
+            if (request.getRequestLine().getMethod().equalsIgnoreCase("POST")
+                    && request instanceof HttpEntityEnclosingRequest) {
+                System.out.println("Running deletion handler");
+
+                // Correctly cast the request and extract the entity
+                HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
+                String jsonBody = EntityUtils.toString(entity);
+                Gson gson = new GsonBuilder().create();
+                List<String> pathsToDelete = gson.fromJson(jsonBody, new TypeToken<List<String>>() {
+                }.getType());
+
+                // Convert the list of paths from string to Path objects
+                List<Path> pathsToDeleteAsPaths = new ArrayList<>();
+                for (String pathString : pathsToDelete) {
+                    pathsToDeleteAsPaths.add(Paths.get(pathString));
+                }
+
+                FileManager fileManager = new FileManager();
+
+                try {
+                    System.out.println("paths to delete: " + pathsToDeleteAsPaths);
+
+                    // Sanitize the paths
+                    for (int i = 0; i < pathsToDeleteAsPaths.size(); i++) {
+                        Path path = pathsToDeleteAsPaths.get(i);
+                        String sanitizedPath = path.toString().replace("]", "").replace("[", "");
+                        pathsToDeleteAsPaths.set(i, Paths.get(sanitizedPath));
+                    }
+
+                    // Call deleteFiles method to remove the files
+                    fileManager.deleteFiles(userPath, pathsToDeleteAsPaths);
+
+                    // Send a response indicating successful deletion
+                    response.setStatusCode(HttpStatus.SC_OK);
+                } catch (Exception e) {
+                    // Handle any exceptions during deletion
+                    response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+                    response.setHeader("Content-Type", "application/json");
+                    response.setEntity(new StringEntity("{\"error\": \"" + e.getMessage() + "\"}"));
+                    e.printStackTrace();
+                }
+            } else {
+                // Send a response indicating an invalid request
+                response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+                response.setHeader("Content-Type", "application/json");
+                response.setEntity(new StringEntity("{\"error\": \"Invalid request or request method\"}"));
+            }
+        }
+    }
+
 }

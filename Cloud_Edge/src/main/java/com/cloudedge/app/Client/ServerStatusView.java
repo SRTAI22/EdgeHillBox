@@ -1,4 +1,4 @@
-package com.cloudedge.app.GUI;
+package com.cloudedge.app.Client;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -48,7 +48,7 @@ public class ServerStatusView {
         return false;
     }
 
-    void connect(JFrame frame) {
+    public void connect(JFrame frame) {
         boolean tryconnect = false;
         do {
             tryconnect = getStatus();
