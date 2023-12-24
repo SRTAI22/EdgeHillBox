@@ -1,4 +1,3 @@
-Certainly! Below is a template for a README file for your CloudEdgeBox project repository:
 # CloudEdgeBox
 
 CloudEdgeBox is a cloud storage application allowing secure file management over HTTP, built with Java and featuring a Swing-based GUI for client interactions. It's designed to meet the specific needs for secure, private file storage and transfer.
