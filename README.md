@@ -45,7 +45,7 @@ After starting the server and client:
 
 ## Contributing
 
-We welcome contributions to the EdgeHillBox project. Please read `CONTRIBUTING.md` for details on our code of conduct, and the process for submitting pull requests.
+contributions are welcome to the EdgeHillBox project. Please read `CONTRIBUTING.md` for details on our code of conduct, and the process for submitting pull requests.
 
 ## License
 
